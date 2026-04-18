@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Orders</title>
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <style>
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "San Francisco", Arial;
+      background: #f5f5f7;
+      color: #1d1d1f;
+    }
+
+    .container {
+      padding: 20px;
+    }
+
+    h2 {
+      text-align: center;
+      font-weight: 600;
+      margin-bottom: 20px;
+    }
+
+    .card {
+      background: white;
+      border-radius: 20px;
+      padding: 15px;
+      margin-bottom: 15px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+    }
+
+    .row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 8px;
+      font-size: 14px;
+    }
+
+    .label {
+      color: #6e6e73;
+    }
+
+    .value {
+      font-weight: 500;
+    }
+
+    .status {
+      padding: 4px 10px;
+      border-radius: 10px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .accepted {
+      background: #e6f4ea;
+      color: #1e7e34;
+    }
+
+    .new {
+      background: #fff3cd;
+      color: #856404;
+    }
+
+    .btn {
+      display: block;
+      text-align: center;
+      background: #0071e3;
+      color: white;
+      padding: 10px;
+      border-radius: 12px;
+      text-decoration: none;
+      margin-top: 10px;
+      font-weight: 500;
+    }
+
+    .btn:hover {
+      background: #005bb5;
+    }
+
+  </style>
+</head>
+
+<body>
+
+<div class="container">
+
+  <h2>📦 Orders</h2>
+
+  <% orders.forEach(order => { %>
+
+    <div class="card">
+
+      <div class="row">
+        <span class="label">Order</span>
+        <span class="value"><%= order.name %></span>
+      </div>
+
+      <div class="row">
+        <span class="label">Counterparty</span>
+        <span class="value"><%= order.counterparty %></span>
+      </div>
+
+      <div class="row">
+        <span class="label">Owner</span>
+        <span class="value"><%= order.owner %></span>
+      </div>
+
+      <div class="row">
+        <span class="label">Total</span>
+        <span class="value">₹ <%= order.total %></span>
+      </div>
+
+      <div class="row">
+        <span class="label">Status</span>
+
+        <span class="status 
+          <%= order.status === 'ACCEPTED' ? 'accepted' : 'new' %>">
+          <%= order.status %>
+        </span>
+      </div>
+
+      <a class="btn" href="/order/<%= order.id %>">
+        View Packing List
+      </a>
+
+    </div>
+
+  <% }) %>
+
+</div>
+
+</body>
+</html>

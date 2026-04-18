@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Packing List</title>
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <style>
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "San Francisco", Arial;
+      background: #f5f5f7;
+      color: #1d1d1f;
+    }
+
+    .container {
+      padding: 15px;
+    }
+
+    h2 {
+      text-align: center;
+      font-weight: 600;
+      margin-bottom: 10px;
+    }
+
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 15px;
+    }
+
+    .btn {
+      background: #0071e3;
+      color: white;
+      padding: 8px 12px;
+      border-radius: 10px;
+      text-decoration: none;
+      font-size: 14px;
+      border: none;
+    }
+
+    .btn:active {
+      background: #005bb5;
+    }
+
+    .card {
+      background: white;
+      border-radius: 15px;
+      padding: 12px;
+      margin-bottom: 10px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+    }
+
+    .row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .product {
+      font-size: 13px;   /* 👈 smaller font for flavours */
+      color: #3a3a3c;
+      max-width: 70%;
+    }
+
+    .qty {
+      font-weight: 600;
+      font-size: 15px;
+    }
+
+    .back {
+      display: block;
+      text-align: center;
+      margin-top: 15px;
+      color: #0071e3;
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    /* 🖨️ Print styling */
+    @media print {
+      body {
+        background: white;
+      }
+
+      .btn, .back {
+        display: none;
+      }
+
+      .card {
+        box-shadow: none;
+        border: 1px solid #ddd;
+      }
+    }
+
+  </style>
+</head>
+
+<body>
+
+<div class="container">
+
+  <h2>📦 Packing List</h2>
+
+  <div class="top-bar">
+    <button class="btn" onclick="window.print()">🖨️ Print</button>
+    <a class="btn" href="/">⬅ Back</a>
+  </div>
+
+  <% items.forEach(item => { %>
+
+    <div class="card">
+      <div class="row">
+        <div class="product"><%= item.name %></div>
+        <div class="qty"><%= item.quantity %></div>
+      </div>
+    </div>
+
+  <% }) %>
+
+</div>
+
+</body>
+</html>
