@@ -4,7 +4,8 @@ const app = express();
 
 app.set("view engine", "ejs");
 
-const TOKEN = "9fd5f39b94e6f4bf6a25a253b007488dd801f668";
+// const TOKEN = "9fd5f39b94e6f4bf6a25a253b007488dd801f668";
+const TOKEN = process.env.TOKEN;
 
 // helper to get name from meta
 async function getName(url) {
