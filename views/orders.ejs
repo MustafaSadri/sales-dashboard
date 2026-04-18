@@ -34,7 +34,7 @@
     .row {
       display: flex;
       justify-content: space-between;
-      margin-bottom: 8px;
+      margin-top: 6px;
       font-size: 14px;
     }
 
@@ -43,7 +43,7 @@
     }
 
     .value {
-      font-weight: 500;
+      font-weight: 600; /* 🔥 bold */
     }
 
     .status {
@@ -63,6 +63,15 @@
       color: #856404;
     }
 
+    .address-box {
+      font-size: 12px;
+      white-space: pre-line;
+      background: #f2f2f7;
+      padding: 10px;
+      border-radius: 10px;
+      margin-top: 8px;
+    }
+
     .btn {
       display: block;
       text-align: center;
@@ -71,7 +80,7 @@
       padding: 10px;
       border-radius: 12px;
       text-decoration: none;
-      margin-top: 10px;
+      margin-top: 12px;
       font-weight: 500;
     }
 
@@ -92,28 +101,9 @@
 
     <div class="card">
 
+      <!-- Order + Status -->
       <div class="row">
-        <span class="label">Order</span>
         <span class="value"><%= order.name %></span>
-      </div>
-
-      <div class="row">
-        <span class="label">Counterparty</span>
-        <span class="value"><%= order.counterparty %></span>
-      </div>
-
-      <div class="row">
-        <span class="label">Owner</span>
-        <span class="value"><%= order.owner %></span>
-      </div>
-
-      <div class="row">
-        <span class="label">Total</span>
-        <span class="value">₹ <%= order.total %></span>
-      </div>
-
-      <div class="row">
-        <span class="label">Status</span>
 
         <span class="status 
           <%= order.status === 'ACCEPTED' ? 'accepted' : 'new' %>">
@@ -121,8 +111,35 @@
         </span>
       </div>
 
+      <!-- Counterparty -->
+      <div class="row">
+        <span class="label">Counterparty</span>
+        <span class="value"><%= order.counterparty %></span>
+      </div>
+
+      <!-- Owner -->
+      <div class="row">
+        <span class="label">Owner</span>
+        <span class="value"><%= order.owner %></span>
+      </div>
+
+      <!-- Total Quantity -->
+      <div class="row">
+        <span class="label">Total Quantity</span>
+        <span class="value"><%= order.totalQty %> pcs</span>
+      </div>
+
+      <!-- Shipping Address -->
+      <div style="margin-top:10px;">
+        <div class="label">Shipping Address</div>
+        <div class="address-box">
+          <%= order.shippingAddress || "No address available" %>
+        </div>
+      </div>
+
+      <!-- Button -->
       <a class="btn" href="/order/<%= order.id %>">
-        View Packing List
+        View Packing
       </a>
 
     </div>
