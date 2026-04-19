@@ -1,107 +1,73 @@
+
+
 const express = require("express");
 const axios = require("axios");
 const app = express();
 
 app.set("view engine", "ejs");
 
-// ✅ DIRECT TOKEN (replace with your real token)
-// const TOKEN = "9fd5f39b94e6f4bf6a25a253b007488dd801f668";
+// 🔐 Token from Render / .env
 const TOKEN = process.env.TOKEN;
+// const TOKEN = "9fd5f39b94e6f4bf6a25a253b007488dd801f668";
 
-// helper to get name from meta
-async function getName(url) {
-  const res = await axios.get(url, {
-    headers: { Authorization: `Bearer ${TOKEN}` }
-  });
-  return res.data.name;
-}
-
-// 🔹 PAGE 1 → Orders (ACCEPTED + NEW)
+// 🔹 PAGE 1 → Orders (OPTIMIZED)
 app.get("/", async (req, res) => {
   try {
     const response = await axios.get(
       "https://api.moysklad.ru/api/remap/1.2/entity/customerorder",
       {
         headers: { Authorization: `Bearer ${TOKEN}` },
-        params: { filter: "state.name=ACCEPTED;state.name=NEW" }
+        params: {
+          filter: "state.name=ACCEPTED;state.name=NEW",
+          expand: "agent,owner,state", // 🔥 removes extra API calls
+          limit: 20
+        }
       }
     );
 
-    let orders = [];
+    const orders = await Promise.all(
+      response.data.rows.map(async (order) => {
 
-for (let order of response.data.rows) {
-  const counterparty = await getName(order.agent.meta.href);
-  const owner = await getName(order.owner.meta.href);
-  const status = await getName(order.state.meta.href);
+        // 🔹 Fetch positions (ONLY for quantity)
+        const posRes = await axios.get(
+          `https://api.moysklad.ru/api/remap/1.2/entity/customerorder/${order.id}/positions`,
+          {
+            headers: { Authorization: `Bearer ${TOKEN}` }
+          }
+        );
 
-  // 🔥 Fetch positions to calculate total quantity
-  const posRes = await axios.get(
-    `https://api.moysklad.ru/api/remap/1.2/entity/customerorder/${order.id}/positions`,
-    {
-      headers: { Authorization: `Bearer ${TOKEN}` }
-    }
-  );
+        let totalQty = 0;
+        posRes.data.rows.forEach(item => {
+          totalQty += item.quantity;
+        });
 
-  let totalQty = 0;
-
-  for (let item of posRes.data.rows) {
-    totalQty += item.quantity;
-  }
-
-  orders.push({
-    id: order.id,
-    name: order.name,
-    counterparty,
-    owner,
-    status,
-    totalQty, // ✅ NEW
-    shippingAddress: order.shipmentAddress // ✅ NEW
-  });
-}
+        return {
+          id: order.id,
+          name: order.name,
+          counterparty: order.agent?.name,
+          owner: order.owner?.name,
+          status: order.state?.name,
+          totalQty,
+          shippingAddress: order.shipmentAddress
+        };
+      })
+    );
 
     res.render("orders", { orders });
 
   } catch (err) {
-    console.log(err.response?.data || err.message);
+    console.log("❌ ERROR:", err.response?.data || err.message);
     res.send("Error loading orders");
   }
 });
 
-// 🔹 PAGE 2 → Packing List
-// app.get("/order/:id", async (req, res) => {
-//   try {
-//     const orderId = req.params.id;
 
-//     const response = await axios.get(
-//       `https://api.moysklad.ru/api/remap/1.2/entity/customerorder/${orderId}/positions`,
-//       {
-//         headers: { Authorization: `Bearer ${TOKEN}` }
-//       }
-//     );
-
-//     let items = [];
-
-//     for (let item of response.data.rows) {
-//       const productName = await getName(item.assortment.meta.href);
-
-//       items.push({
-//         name: productName,
-//         quantity: item.quantity
-//       });
-//     }
-
-//     res.render("packing", { items });
-
-//   } catch (err) {
-//     console.log(err.response?.data || err.message);
-//     res.send("Error loading packing list");
-//   }
-// });
+// 🔹 PAGE 2 → Packing List (FIXED + FAST)
 app.get("/order/:id", async (req, res) => {
   try {
     const orderId = req.params.id;
 
-    // 🔥 1. Get order details (for address + name)
+    // 🔹 Get order details
     const orderRes = await axios.get(
       `https://api.moysklad.ru/api/remap/1.2/entity/customerorder/${orderId}`,
       {
@@ -112,33 +78,22 @@ app.get("/order/:id", async (req, res) => {
     const shippingAddress = orderRes.data.shipmentAddress;
     const orderName = orderRes.data.name;
 
-    // 🔥 2. Get positions (items)
+    // 🔹 Get positions WITH product names (no extra calls)
     const response = await axios.get(
       `https://api.moysklad.ru/api/remap/1.2/entity/customerorder/${orderId}/positions`,
       {
-        headers: { Authorization: `Bearer ${TOKEN}` }
+        headers: { Authorization: `Bearer ${TOKEN}` },
+        params: {
+          expand: "assortment" // 🔥 key fix
+        }
       }
     );
 
-    let items = [];
+    const items = response.data.rows.map(item => ({
+      name: item.assortment?.name || "No name",
+      quantity: item.quantity
+    }));
 
-    // 🔥 3. Fetch product names safely (with small delay)
-    for (let item of response.data.rows) {
-
-      // prevent API rate limit
-      await new Promise(resolve => setTimeout(resolve, 100));
-
-      const productRes = await axios.get(item.assortment.meta.href, {
-        headers: { Authorization: `Bearer ${TOKEN}` }
-      });
-
-      items.push({
-        name: productRes.data.name,
-        quantity: item.quantity
-      });
-    }
-
-    // 🔥 4. Send everything to EJS
     res.render("packing", {
       items,
       shippingAddress,
@@ -151,7 +106,8 @@ app.get("/order/:id", async (req, res) => {
   }
 });
 
-// ✅ Works locally + Render
+
+// ✅ PORT (Render compatible)
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
