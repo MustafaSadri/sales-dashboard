@@ -68,10 +68,51 @@ for (let order of response.data.rows) {
 });
 
 // 🔹 PAGE 2 → Packing List
+// app.get("/order/:id", async (req, res) => {
+//   try {
+//     const orderId = req.params.id;
+
+//     const response = await axios.get(
+//       `https://api.moysklad.ru/api/remap/1.2/entity/customerorder/${orderId}/positions`,
+//       {
+//         headers: { Authorization: `Bearer ${TOKEN}` }
+//       }
+//     );
+
+//     let items = [];
+
+//     for (let item of response.data.rows) {
+//       const productName = await getName(item.assortment.meta.href);
+
+//       items.push({
+//         name: productName,
+//         quantity: item.quantity
+//       });
+//     }
+
+//     res.render("packing", { items });
+
+//   } catch (err) {
+//     console.log(err.response?.data || err.message);
+//     res.send("Error loading packing list");
+//   }
+// });
 app.get("/order/:id", async (req, res) => {
   try {
     const orderId = req.params.id;
 
+    // 🔥 1. Get order details (for address + name)
+    const orderRes = await axios.get(
+      `https://api.moysklad.ru/api/remap/1.2/entity/customerorder/${orderId}`,
+      {
+        headers: { Authorization: `Bearer ${TOKEN}` }
+      }
+    );
+
+    const shippingAddress = orderRes.data.shipmentAddress;
+    const orderName = orderRes.data.name;
+
+    // 🔥 2. Get positions (items)
     const response = await axios.get(
       `https://api.moysklad.ru/api/remap/1.2/entity/customerorder/${orderId}/positions`,
       {
@@ -81,19 +122,31 @@ app.get("/order/:id", async (req, res) => {
 
     let items = [];
 
+    // 🔥 3. Fetch product names safely (with small delay)
     for (let item of response.data.rows) {
-      const productName = await getName(item.assortment.meta.href);
+
+      // prevent API rate limit
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      const productRes = await axios.get(item.assortment.meta.href, {
+        headers: { Authorization: `Bearer ${TOKEN}` }
+      });
 
       items.push({
-        name: productName,
+        name: productRes.data.name,
         quantity: item.quantity
       });
     }
 
-    res.render("packing", { items });
+    // 🔥 4. Send everything to EJS
+    res.render("packing", {
+      items,
+      shippingAddress,
+      orderName
+    });
 
   } catch (err) {
-    console.log(err.response?.data || err.message);
+    console.log("❌ ERROR:", err.response?.data || err.message);
     res.send("Error loading packing list");
   }
 });

@@ -11,6 +11,37 @@
       padding: 15px;
     }
 
+    h2 {
+      text-align: center;
+      margin-bottom: 10px;
+    }
+
+    .top-box {
+      background: white;
+      border-radius: 12px;
+      padding: 12px;
+      margin-bottom: 12px;
+    }
+
+    .label {
+      font-size: 12px;
+      color: #6e6e73;
+      margin-top: 6px;
+    }
+
+    .value {
+      font-weight: 600;
+    }
+
+    .address {
+      font-size: 12px;
+      white-space: pre-line;
+      background: #f2f2f7;
+      padding: 8px;
+      border-radius: 8px;
+      margin-top: 5px;
+    }
+
     .card {
       background: white;
       border-radius: 10px;
@@ -25,6 +56,7 @@
 
     .product {
       font-size: 13px;
+      max-width: 70%;
     }
 
     .qty {
@@ -40,6 +72,13 @@
       border-radius: 8px;
       text-decoration: none;
     }
+
+    /* Print styling */
+    @media print {
+      .btn {
+        display: none;
+      }
+    }
   </style>
 </head>
 
@@ -47,8 +86,20 @@
 
 <h2>📦 Packing List</h2>
 
-<button class="btn" onclick="window.print()">Print</button>
-<a class="btn" href="/">Back</a>
+<div class="top-box">
+
+  <div class="label">Order</div>
+  <div class="value"><%= orderName %></div>
+
+  <div class="label">Shipping Address</div>
+  <div class="address">
+    <%= shippingAddress || "No address available" %>
+  </div>
+
+</div>
+
+<button class="btn" onclick="window.print()">🖨️ Print</button>
+<a class="btn" href="/">⬅ Back</a>
 
 <% items.forEach(item => { %>
 
