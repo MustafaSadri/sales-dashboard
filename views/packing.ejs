@@ -42,6 +42,28 @@
       margin-top: 5px;
     }
 
+    /* BUTTON BAR */
+    .btn-bar {
+      display: flex;
+      gap: 10px;
+      margin: 10px 0 15px 0;
+    }
+
+    .btn {
+      padding: 8px 14px;
+      background: #0071e3;
+      color: white;
+      border-radius: 8px;
+      text-decoration: none;
+      border: none;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    .btn:hover {
+      background: #005bb5;
+    }
+
     .card {
       background: white;
       border-radius: 10px;
@@ -63,31 +85,27 @@
       font-weight: bold;
     }
 
-    .btn {
-      display: inline-block;
-      margin: 10px 5px;
-      padding: 8px 12px;
-      background: #0071e3;
-      color: white;
-      border-radius: 8px;
-      text-decoration: none;
-    }
-
-    /* Print styling */
+    /* PRINT: hide buttons */
     @media print {
-      .btn {
+      .btn-bar {
         display: none;
       }
     }
   </style>
+
+  <!-- PDF LIBRARY -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
 </head>
 
 <body>
 
+<!-- ✅ PDF CONTENT ONLY -->
+<div id="pdfContent">
+
 <h2>📦 Packing List</h2>
 
 <div class="top-box">
-
   <div class="label">Order</div>
   <div class="value"><%= orderName %></div>
 
@@ -95,40 +113,43 @@
   <div class="address">
     <%= shippingAddress || "No address available" %>
   </div>
+</div>
 
 </div>
 
-<button class="btn" onclick="window.print()">🖨️ Print</button>
-<button class="btn" onclick="sharePage()">📤 Share</button>
-<a class="btn" href="/">⬅ Back</a>
+<!-- ✅ BUTTONS AT TOP -->
+<div class="btn-bar">
+  <button class="btn" onclick="window.print()">🖨️ Print</button>
+  <button class="btn" onclick="downloadPDF()">⬇ Download</button>
+  <a class="btn" href="/">⬅ Back</a>
+</div>
 
+<!-- ✅ ITEMS LIST -->
 <% items.forEach(item => { %>
-
 <div class="card">
   <div class="row">
     <div class="product"><%= item.name %></div>
     <div class="qty"><%= item.quantity %></div>
   </div>
 </div>
-
 <% }) %>
-// android sharing feature 
+
+<!-- SCRIPT -->
 <script>
-async function sharePage() {
-  try {
-    if (navigator.share) {
-      await navigator.share({
-        title: 'Packing List - <%= orderName %>',
-        text: 'Packing list for order <%= orderName %>',
-        url: window.location.href
-      });
-    } else {
-      alert("Sharing not supported on this device. Please use Print.");
-    }
-  } catch (err) {
-    console.log("Share failed:", err);
+  function downloadPDF() {
+    const element = document.getElementById("pdfContent");
+
+    const opt = {
+      margin: 0.3,
+      filename: 'Packing_List_<%= orderName %>.pdf',
+      image: { type: 'jpeg', quality: 1 },
+      html2canvas: { scale: 2 },
+      jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
+    };
+
+    html2pdf().set(opt).from(element).save();
   }
-}
 </script>
+
 </body>
 </html>
