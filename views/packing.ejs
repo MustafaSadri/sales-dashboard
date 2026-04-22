@@ -111,6 +111,23 @@
 </div>
 
 <% }) %>
-
+// android sharing feature 
+<script>
+async function sharePage() {
+  try {
+    if (navigator.share) {
+      await navigator.share({
+        title: 'Packing List - <%= orderName %>',
+        text: 'Packing list for order <%= orderName %>',
+        url: window.location.href
+      });
+    } else {
+      alert("Sharing not supported on this device. Please use Print.");
+    }
+  } catch (err) {
+    console.log("Share failed:", err);
+  }
+}
+</script>
 </body>
 </html>
