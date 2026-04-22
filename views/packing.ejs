@@ -8,99 +8,133 @@
     body {
       font-family: -apple-system, Arial;
       background: #f5f5f7;
-      padding: 15px;
+      padding: 10px;
     }
 
     h2 {
       text-align: center;
-      margin-bottom: 10px;
+      margin-bottom: 4px;
+      font-size: 16px;
     }
 
     .top-box {
       background: white;
-      border-radius: 12px;
-      padding: 12px;
-      margin-bottom: 12px;
+      border-radius: 10px;
+      padding: 6px;
+      margin-bottom: 6px;
     }
 
     .label {
-      font-size: 12px;
+      font-size: 10px;
       color: #6e6e73;
-      margin-top: 6px;
+      margin-top: 2px;
     }
 
     .value {
       font-weight: 600;
+      font-size: 12px;
     }
 
     .address {
-      font-size: 12px;
+      font-size: 10px;
       white-space: pre-line;
       background: #f2f2f7;
-      padding: 8px;
-      border-radius: 8px;
-      margin-top: 5px;
+      padding: 4px;
+      border-radius: 6px;
+      margin-top: 4px;
+    }
+
+    /* ✅ TOTAL ROW FIXED */
+    .total-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      margin-top: 4px;
+      padding: 4px 6px;
+      border-top: 1px solid #ddd;
     }
 
     .btn-bar {
       display: flex;
-      gap: 10px;
-      margin: 10px 0 15px 0;
+      gap: 8px;
+      margin: 8px 0 10px 0;
     }
 
     .btn {
-      padding: 8px 14px;
+      padding: 6px 10px;
       background: #0071e3;
       color: white;
-      border-radius: 8px;
+      border-radius: 6px;
       border: none;
       cursor: pointer;
-      font-size: 14px;
+      font-size: 12px;
       text-decoration: none;
     }
 
+    /* ✅ COMPACT CARD */
     .card {
       background: white;
-      border-radius: 10px;
-      padding: 10px;
-      margin-bottom: 8px;
+      border-radius: 6px;
+      padding: 4px 6px;
+      margin-bottom: 2px;
+      page-break-inside: avoid;
     }
 
+    /* ✅ ROW FIX */
     .row {
       display: flex;
       justify-content: space-between;
+      align-items: center;
+      gap: 10px;
     }
 
+    /* ✅ PRODUCT FLEX FIX */
     .product {
-      font-size: 13px;
-      max-width: 70%;
+      font-size: 11.5px;
+      flex: 1;
+      word-break: break-word;
     }
 
+    /* ✅ QTY FIX (NO CUT EVER) */
     .qty {
       font-weight: bold;
+      font-size: 11.5px;
+      min-width: 40px;
+      text-align: right;
+      padding-right: 4px;
+    }
+
+    /* ✅ PDF SAFE AREA */
+    #pdfContent {
+      width: 100%;
+      overflow: hidden;
+      padding-right: 6px;
     }
 
     @media print {
       .btn-bar {
         display: none;
       }
+      body {
+        background: white;
+      }
     }
   </style>
 
+  <!-- PDF Library -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-
 </head>
 
 <body>
 
-<!-- ✅ BUTTONS -->
+<!-- BUTTONS -->
 <div class="btn-bar">
   <button class="btn" onclick="window.print()">🖨️ Print</button>
   <button class="btn" onclick="downloadPDF()">⬇ Download</button>
   <a class="btn" href="/">⬅ Back</a>
 </div>
 
-<!-- ✅ EVERYTHING INSIDE PDF -->
+<!-- PDF CONTENT -->
 <div id="pdfContent">
 
 <h2>📦 Packing List</h2>
@@ -113,9 +147,15 @@
   <div class="address">
     <%= shippingAddress || "No address available" %>
   </div>
+
+  <!-- TOTAL PCS -->
+  <div class="total-row">
+    <div><b>Total PCS</b></div>
+    <div><b><%= items.reduce((sum, item) => sum + item.quantity, 0) %></b></div>
+  </div>
 </div>
 
-<!-- ✅ ITEMS NOW INCLUDED -->
+<!-- ITEMS -->
 <% items.forEach(item => { %>
 <div class="card">
   <div class="row">
@@ -127,20 +167,21 @@
 
 </div>
 
+<!-- PDF SCRIPT -->
 <script>
-  function downloadPDF() {
-    const element = document.getElementById("pdfContent");
+function downloadPDF() {
+  const element = document.getElementById("pdfContent");
 
-    const opt = {
-      margin: 0.3,
-      filename: 'Packing_List_<%= orderName %>.pdf',
-      image: { type: 'jpeg', quality: 1 },
-      html2canvas: { scale: 2 },
-      jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
-    };
+  const opt = {
+    margin: 8,
+    filename: 'Packing_List_<%= orderName %>.pdf',
+    image: { type: 'jpeg', quality: 1 },
+    html2canvas: { scale: 2 },
+    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+  };
 
-    html2pdf().set(opt).from(element).save();
-  }
+  html2pdf().set(opt).from(element).save();
+}
 </script>
 
 </body>
