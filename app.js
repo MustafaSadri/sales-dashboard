@@ -6,9 +6,9 @@ const app = express();
 app.set("view engine", "ejs");
 
 // 🔐 TOKEN
-const TOKEN = process.env.TOKEN;
+// const TOKEN = process.env.TOKEN;
 
-// const TOKEN = "9fd5f39b94e6f4bf6a25a253b007488dd801f668";
+const TOKEN = "9fd5f39b94e6f4bf6a25a253b007488dd801f668";
 
 // 🔁 RETRY FUNCTION (VERY IMPORTANT)
 async function fetchWithRetry(url, options, retries = 3) {
@@ -58,7 +58,8 @@ app.get("/", async (req, res) => {
         order.store?.name === "yuzhnie Varota" &&
         (
           order.state?.name === "ACCEPTED" ||
-          order.state?.name === "NEW"
+          order.state?.name === "NEW"||
+          order.state?.name === "READY TO DISPATCH"
         )
       );
 
