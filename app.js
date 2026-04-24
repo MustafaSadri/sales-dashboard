@@ -6,9 +6,9 @@ const app = express();
 app.set("view engine", "ejs");
 
 // 🔐 TOKEN
-// const TOKEN = process.env.TOKEN;
+const TOKEN = process.env.TOKEN;
 
-const TOKEN = "9fd5f39b94e6f4bf6a25a253b007488dd801f668";
+// const TOKEN = "ccae55834a1e1b89e76dcafb9ffb56198719c93d";
 
 // 🔁 RETRY FUNCTION (VERY IMPORTANT)
 async function fetchWithRetry(url, options, retries = 3) {
