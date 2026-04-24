@@ -1,35 +1,75 @@
 
-
 const express = require("express");
 const axios = require("axios");
 const app = express();
 
 app.set("view engine", "ejs");
 
-// 🔐 Token from Render / .env
-const TOKEN = process.env.TOKEN;
-// const TOKEN = "9fd5f39b94e6f4bf6a25a253b007488dd801f668";
+// 🔐 TOKEN
+const TOKEN = "9fd5f39b94e6f4bf6a25a253b007488dd801f668";
 
-// 🔹 PAGE 1 → Orders (OPTIMIZED)
+// 🔁 RETRY FUNCTION (VERY IMPORTANT)
+async function fetchWithRetry(url, options, retries = 3) {
+  try {
+    return await axios.get(url, options);
+  } catch (err) {
+    console.log("❌ API Error:", err.code || err.message);
+
+    if (retries > 0) {
+      console.log("🔁 Retrying...");
+      await new Promise(res => setTimeout(res, 1000));
+      return fetchWithRetry(url, options, retries - 1);
+    }
+
+    throw err;
+  }
+}
+
+// 🔹 PAGE 1 → ORDERS
 app.get("/", async (req, res) => {
   try {
-    const response = await axios.get(
-      "https://api.moysklad.ru/api/remap/1.2/entity/customerorder",
-      {
-        headers: { Authorization: `Bearer ${TOKEN}` },
-        params: {
-          filter: "state.name=ACCEPTED;state.name=NEW",
-          expand: "agent,owner,state", // 🔥 removes extra API calls
-          limit: 20
+    let allOrders = [];
+    let offset = 0;
+    const LIMIT = 50;
+
+    while (allOrders.length < 20) {
+
+      const response = await fetchWithRetry(
+        "https://api.moysklad.ru/api/remap/1.2/entity/customerorder",
+        {
+          headers: { Authorization: `Bearer ${TOKEN}` },
+          params: {
+            expand: "agent,owner,state,store",
+            limit: LIMIT,
+            offset: offset,
+            order: "moment,desc"
+          }
         }
-      }
-    );
+      );
+
+      const rows = response.data.rows;
+
+      if (!rows || rows.length === 0) break;
+
+      // ✅ FILTER (warehouse + status)
+      const filtered = rows.filter(order =>
+        order.store?.name === "yuzhnie Varota" &&
+        (
+          order.state?.name === "ACCEPTED" ||
+          order.state?.name === "NEW"
+        )
+      );
+
+      allOrders.push(...filtered);
+      offset += LIMIT;
+    }
+
+    const finalOrders = allOrders.slice(0, 20);
 
     const orders = await Promise.all(
-      response.data.rows.map(async (order) => {
+      finalOrders.map(async (order) => {
 
-        // 🔹 Fetch positions (ONLY for quantity)
-        const posRes = await axios.get(
+        const posRes = await fetchWithRetry(
           `https://api.moysklad.ru/api/remap/1.2/entity/customerorder/${order.id}/positions`,
           {
             headers: { Authorization: `Bearer ${TOKEN}` }
@@ -48,7 +88,8 @@ app.get("/", async (req, res) => {
           owner: order.owner?.name,
           status: order.state?.name,
           totalQty,
-          shippingAddress: order.shipmentAddress
+          shippingAddress: order.shipmentAddress,
+          date: order.moment
         };
       })
     );
@@ -56,19 +97,19 @@ app.get("/", async (req, res) => {
     res.render("orders", { orders });
 
   } catch (err) {
-    console.log("❌ ERROR:", err.response?.data || err.message);
-    res.send("Error loading orders");
+    console.log("❌ FINAL ERROR:", err.message);
+
+    // ✅ DO NOT CRASH PAGE
+    res.render("orders", { orders: [] });
   }
 });
 
-
-// 🔹 PAGE 2 → Packing List (FIXED + FAST)
+// 🔹 PAGE 2 → PACKING LIST
 app.get("/order/:id", async (req, res) => {
   try {
     const orderId = req.params.id;
 
-    // 🔹 Get order details
-    const orderRes = await axios.get(
+    const orderRes = await fetchWithRetry(
       `https://api.moysklad.ru/api/remap/1.2/entity/customerorder/${orderId}`,
       {
         headers: { Authorization: `Bearer ${TOKEN}` }
@@ -78,13 +119,12 @@ app.get("/order/:id", async (req, res) => {
     const shippingAddress = orderRes.data.shipmentAddress;
     const orderName = orderRes.data.name;
 
-    // 🔹 Get positions WITH product names (no extra calls)
-    const response = await axios.get(
+    const response = await fetchWithRetry(
       `https://api.moysklad.ru/api/remap/1.2/entity/customerorder/${orderId}/positions`,
       {
         headers: { Authorization: `Bearer ${TOKEN}` },
         params: {
-          expand: "assortment" // 🔥 key fix
+          expand: "assortment"
         }
       }
     );
@@ -101,13 +141,12 @@ app.get("/order/:id", async (req, res) => {
     });
 
   } catch (err) {
-    console.log("❌ ERROR:", err.response?.data || err.message);
+    console.log("❌ ERROR:", err.message);
     res.send("Error loading packing list");
   }
 });
 
-
-// ✅ PORT (Render compatible)
+// ✅ PORT
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {

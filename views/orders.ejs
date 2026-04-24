@@ -43,7 +43,7 @@
     }
 
     .value {
-      font-weight: 600; /* 🔥 bold */
+      font-weight: 600;
     }
 
     .status {
@@ -87,8 +87,12 @@
     .btn:hover {
       background: #005bb5;
     }
-
   </style>
+  <script>
+  setTimeout(() => {
+    location.reload();
+  }, 30000); // reload every 30 seconds
+</script>
 </head>
 
 <body>
@@ -109,6 +113,20 @@
           <%= order.status === 'ACCEPTED' ? 'accepted' : 'new' %>">
           <%= order.status %>
         </span>
+      </div>
+
+      <!-- Date (ONLY DATE) -->
+      <%
+        const d = new Date(order.date);
+        const onlyDate =
+          String(d.getDate()).padStart(2, "0") + "." +
+          String(d.getMonth() + 1).padStart(2, "0") + "." +
+          d.getFullYear();
+      %>
+
+      <div class="row">
+        <span class="label">Date Created</span>
+        <span class="value"><%= onlyDate %></span>
       </div>
 
       <!-- Counterparty -->
