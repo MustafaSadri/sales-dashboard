@@ -63,6 +63,11 @@
       color: #856404;
     }
 
+    .ready {
+      background: #e8f0fe;
+      color: #174ea6;
+    }
+
     .address-box {
       font-size: 12px;
       white-space: pre-line;
@@ -87,6 +92,14 @@
     .btn:hover {
       background: #005bb5;
     }
+
+    .status-btn {
+      background: #1d1d1f;
+    }
+
+    .status-btn:hover {
+      background: #3a3a3c;
+    }
   </style>
   <script>
   setTimeout(() => {
@@ -110,7 +123,7 @@
         <span class="value"><%= order.name %></span>
 
         <span class="status 
-          <%= order.status === 'ACCEPTED' ? 'accepted' : 'new' %>">
+          <%= order.status === 'ACCEPTED' ? 'accepted' : (order.status === 'READY TO DISPATCH' ? 'ready' : 'new') %>">
           <%= order.status %>
         </span>
       </div>
@@ -159,6 +172,12 @@
       <a class="btn" href="/order/<%= order.id %>">
         View Packing
       </a>
+
+      <% if (order.nextStatus) { %>
+        <a class="btn status-btn" href="/confirm-status/<%= order.id %>/<%= encodeURIComponent(order.nextStatus) %>">
+          <%= order.statusActionLabel %>
+        </a>
+      <% } %>
 
     </div>
 

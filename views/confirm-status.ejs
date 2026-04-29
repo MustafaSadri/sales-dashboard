@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Confirm Status</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <style>
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "San Francisco", Arial;
+      background: #f5f5f7;
+      color: #1d1d1f;
+    }
+
+    .container {
+      padding: 20px;
+      max-width: 520px;
+      margin: 0 auto;
+    }
+
+    h2 {
+      text-align: center;
+      font-weight: 600;
+      margin-bottom: 20px;
+    }
+
+    .card {
+      background: white;
+      border-radius: 20px;
+      padding: 18px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+    }
+
+    .label {
+      color: #6e6e73;
+      font-size: 14px;
+      margin-top: 12px;
+    }
+
+    .value {
+      font-weight: 600;
+      font-size: 16px;
+      margin-top: 4px;
+      word-break: break-word;
+    }
+
+    .status {
+      display: inline-block;
+      background: #e6f4ea;
+      color: #1e7e34;
+      padding: 5px 10px;
+      border-radius: 10px;
+      font-size: 12px;
+      font-weight: 600;
+      margin-top: 4px;
+    }
+
+    .actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    .btn {
+      flex: 1;
+      text-align: center;
+      background: #0071e3;
+      color: white;
+      padding: 11px 10px;
+      border-radius: 12px;
+      text-decoration: none;
+      border: none;
+      font: inherit;
+      font-weight: 500;
+      cursor: pointer;
+    }
+
+    .btn:hover {
+      background: #005bb5;
+    }
+
+    .cancel {
+      background: #e5e5ea;
+      color: #1d1d1f;
+    }
+
+    .cancel:hover {
+      background: #d1d1d6;
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="container">
+  <h2>Confirm Status</h2>
+
+  <div class="card">
+    <div class="label">Order</div>
+    <div class="value"><%= order.name %></div>
+
+    <div class="label">Current Status</div>
+    <div class="value"><%= order.status %></div>
+
+    <div class="label">Change To</div>
+    <div class="status"><%= wantedStatus %></div>
+
+    <form class="actions" method="POST" action="/update-status/<%= order.id %>/<%= encodeURIComponent(wantedStatus) %>">
+      <a class="btn cancel" href="/">Cancel</a>
+      <button class="btn" type="submit">OK</button>
+    </form>
+  </div>
+</div>
+
+</body>
+</html>
