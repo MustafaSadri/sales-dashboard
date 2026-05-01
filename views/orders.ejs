@@ -94,11 +94,32 @@
     }
 
     .status-btn {
-      background: #1d1d1f;
+      background: #ff9500; /* Vibrant Apple Orange */
+      color: white;
     }
 
     .status-btn:hover {
-      background: #3a3a3c;
+      background: #e68600;
+    }
+
+    .shipment-btn {
+      background: #34c759; /* Vibrant Apple Green */
+      color: white;
+    }
+
+    .shipment-btn:hover {
+      background: #2dae4c;
+    }
+
+    .shipment-flag {
+      margin-top: 12px;
+      padding: 8px 10px;
+      border-radius: 10px;
+      background: #e6f4ea;
+      color: #1e7e34;
+      font-size: 13px;
+      font-weight: 600;
+      text-align: center;
     }
   </style>
   <script>
@@ -112,12 +133,13 @@
 
 <div class="container">
 
+  <a href="/transfers" class="btn" style="display:inline-block; margin-bottom: 20px; font-size: 14px; padding: 8px 16px; background: #5856d6;">⇆ View Transfers</a>
+
   <h2>📦 Orders</h2>
 
   <% orders.forEach(order => { %>
 
     <div class="card">
-
       <!-- Order + Status -->
       <div class="row">
         <span class="value"><%= order.name %></span>
@@ -173,9 +195,19 @@
         View Packing
       </a>
 
+      <% if (order.shipmentCreated) { %>
+        <div class="shipment-flag">Shipment Created</div>
+      <% } %>
+
       <% if (order.nextStatus) { %>
         <a class="btn status-btn" href="/confirm-status/<%= order.id %>/<%= encodeURIComponent(order.nextStatus) %>">
           <%= order.statusActionLabel %>
+        </a>
+      <% } %>
+
+      <% if (order.canCreateShipment) { %>
+        <a class="btn shipment-btn" href="/confirm-shipment/<%= order.id %>">
+          Create Shipment
         </a>
       <% } %>
 

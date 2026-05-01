@@ -14,6 +14,7 @@ const API_BASE = "https://api.moysklad.ru/api/remap/1.2";
 const ORDER_CACHE_MS = 30000;
 const ORDER_STALE_MS = 5 * 60 * 1000;
 const ORDER_TOTAL_CACHE_MS = 10 * 60 * 1000;
+const SHIPMENT_STATUS_CACHE_MS = 30000;
 const PACKING_CACHE_MS = 5 * 60 * 1000;
 const MAX_PACKING_CACHE_ITEMS = 100;
 const MAX_ORDER_TOTAL_CACHE_ITEMS = 300;
@@ -22,6 +23,7 @@ const ORDER_LIMIT = 50;
 const MAX_ORDER_PAGES = 6;
 const WAREHOUSE_NAME = "yuzhnie Varota";
 const STATUS_PASSCODE = process.env.STATUS_PASSCODE || "1122";
+const SHIPMENT_STATUS_NAME = process.env.SHIPMENT_STATUS_NAME || "SHIPMENT CREATED";
 const ALLOWED_STATUSES = new Set(["ACCEPTED", "NEW", "READY TO DISPATCH"]);
 const STATUS_TRANSITIONS = {
   NEW: "ACCEPTED",
@@ -43,9 +45,14 @@ let ordersCache = {
 
 const packingCache = new Map();
 const orderTotalCache = new Map();
+const shipmentStatusCache = new Map();
 const packingLoadPromises = new Map();
 let ordersRefreshPromise = null;
 let statesCache = {
+  expiresAt: 0,
+  data: []
+};
+let demandStatesCache = {
   expiresAt: 0,
   data: []
 };
@@ -146,6 +153,10 @@ async function putWithRetry(url, data, options = {}, retries = 2) {
   return apiRequestWithRetry("put", url, { ...options, data }, retries);
 }
 
+async function postWithRetry(url, data, options = {}, retries = 2) {
+  return apiRequestWithRetry("post", url, { ...options, data }, retries);
+}
+
 function isWantedOrder(order) {
   return order.store?.name === WAREHOUSE_NAME && ALLOWED_STATUSES.has(order.state?.name);
 }
@@ -162,11 +173,14 @@ function getStatusActionLabel(status) {
 
 function addStatusAction(order) {
   const nextStatus = getNextStatus(order.status);
+  const shipmentCreated = Boolean(order.shipmentCreated);
 
   return {
     ...order,
+    shipmentCreated,
     nextStatus,
-    statusActionLabel: getStatusActionLabel(order.status)
+    statusActionLabel: getStatusActionLabel(order.status),
+    canCreateShipment: order.status === "READY TO DISPATCH" && !shipmentCreated
   };
 }
 
@@ -248,6 +262,29 @@ function saveOrderTotalCache(orderId, totalQty) {
   });
 }
 
+function getCachedShipmentStatus(orderId) {
+  const cached = shipmentStatusCache.get(orderId);
+
+  if (!cached) {
+    return null;
+  }
+
+  if (cached.expiresAt <= Date.now()) {
+    shipmentStatusCache.delete(orderId);
+    return null;
+  }
+
+  return cached;
+}
+
+function saveShipmentStatus(orderId, shipment) {
+  shipmentStatusCache.set(orderId, {
+    exists: Boolean(shipment),
+    shipment: shipment || null,
+    expiresAt: Date.now() + SHIPMENT_STATUS_CACHE_MS
+  });
+}
+
 async function getOrderTotalQty(orderId) {
   const cached = getCachedOrderTotal(orderId);
 
@@ -286,6 +323,24 @@ async function getStates() {
   return states;
 }
 
+async function getDemandStates() {
+  const now = Date.now();
+
+  if (demandStatesCache.expiresAt > now && demandStatesCache.data.length > 0) {
+    return demandStatesCache.data;
+  }
+
+  const response = await fetchWithRetry("/entity/demand/metadata");
+  const states = response.data.states || [];
+
+  demandStatesCache = {
+    expiresAt: now + STATES_CACHE_MS,
+    data: states
+  };
+
+  return states;
+}
+
 async function getMoyskladStateByName(statusName) {
   const states = await getStates();
   const selected = states.find(
@@ -294,6 +349,19 @@ async function getMoyskladStateByName(statusName) {
 
   if (!selected) {
     throw new Error(`Status not found in MoySklad: ${statusName}`);
+  }
+
+  return selected;
+}
+
+async function getDemandStateByName(statusName) {
+  const states = await getDemandStates();
+  const selected = states.find(
+    state => state.name && state.name.toLowerCase() === statusName.toLowerCase()
+  );
+
+  if (!selected) {
+    throw new Error(`Shipment status not found in MoySklad: ${statusName}`);
   }
 
   return selected;
@@ -317,6 +385,139 @@ async function getOrderForStatusChange(orderId) {
     name: response.data.name,
     status: response.data.state?.name
   };
+}
+
+async function getFullOrderForShipment(orderId) {
+  const [orderRes, positionsRes] = await Promise.all([
+    fetchWithRetry(`/entity/customerorder/${orderId}`, {
+      params: {
+        expand: "agent,organization,store,state,demands"
+      }
+    }),
+    fetchWithRetry(`/entity/customerorder/${orderId}/positions`, {
+      params: {
+        expand: "assortment"
+      }
+    })
+  ]);
+
+  return {
+    ...orderRes.data,
+    positions: positionsRes.data.rows || []
+  };
+}
+
+function addShipmentStatus(order) {
+  if (order.status !== "READY TO DISPATCH") {
+    return addStatusAction(order);
+  }
+
+  const hasDemandInMoySklad = order.demands && order.demands.length > 0;
+  const hasCachedDemand = getCachedShipmentStatus(order.id)?.exists;
+
+  return addStatusAction({
+    ...order,
+    shipmentCreated: Boolean(hasDemandInMoySklad || hasCachedDemand)
+  });
+}
+
+function buildShipmentPositions(order) {
+  return order.positions.map(position => {
+    const shipmentPosition = {
+      quantity: position.quantity,
+      price: position.price || 0,
+      discount: position.discount || 0,
+      vat: position.vat,
+      assortment: {
+        meta: position.assortment.meta
+      }
+    };
+
+    if (position.vatEnabled !== undefined) {
+      shipmentPosition.vatEnabled = position.vatEnabled;
+    }
+
+    return shipmentPosition;
+  });
+}
+
+function validateShipmentOrder(order) {
+  if (order.store?.name !== WAREHOUSE_NAME) {
+    throw new Error("Shipment can be created only for yuzhnie Varota warehouse");
+  }
+
+  if (order.state?.name !== "READY TO DISPATCH") {
+    throw new Error("Shipment can be created only for READY TO DISPATCH orders");
+  }
+
+  if (!order.positions.length) {
+    throw new Error("Order has no positions");
+  }
+
+  if (!order.agent?.meta || !order.organization?.meta || !order.store?.meta) {
+    throw new Error("Order is missing required MoySklad fields");
+  }
+}
+
+async function ensureShipmentExists(orderId) {
+  const order = await getFullOrderForShipment(orderId);
+
+  validateShipmentOrder(order);
+
+  if (order.demands && order.demands.length > 0) {
+    const existingShipment = order.demands[0];
+    saveShipmentStatus(orderId, existingShipment);
+
+    return {
+      created: false,
+      shipment: existingShipment,
+      order
+    };
+  }
+
+  const shipmentState = await getDemandStateByName(SHIPMENT_STATUS_NAME);
+
+  const response = await postWithRetry("/entity/demand", {
+    name: order.name,
+    applicable: true,
+    state: {
+      meta: shipmentState.meta
+    },
+    agent: {
+      meta: order.agent.meta
+    },
+    organization: {
+      meta: order.organization.meta
+    },
+    store: {
+      meta: order.store.meta
+    },
+    customerOrder: {
+      meta: order.meta
+    },
+    positions: buildShipmentPositions(order)
+  });
+
+  saveShipmentStatus(orderId, response.data);
+  clearOrdersCache();
+
+  return {
+    created: true,
+    shipment: response.data,
+    order
+  };
+}
+
+async function assertShipmentExistsForDispatch(orderId) {
+  const order = await getFullOrderForShipment(orderId);
+
+  validateShipmentOrder(order);
+
+  if (!order.demands || order.demands.length === 0) {
+    throw new Error("Create shipment before dispatching this order");
+  }
+
+  return order.demands[0];
 }
 
 async function getFreshOrderForStatusChange(orderId) {
@@ -350,6 +551,10 @@ async function updateOrderStatus(orderId, wantedStatus) {
 
   assertAllowedStatusChange(order, wantedStatus);
 
+  if (wantedStatus === "DISPATCHED") {
+    await assertShipmentExistsForDispatch(orderId);
+  }
+
   const selectedState = await getMoyskladStateByName(wantedStatus);
 
   await putWithRetry(`/entity/customerorder/${orderId}`, {
@@ -366,7 +571,7 @@ async function updateOrderStatus(orderId, wantedStatus) {
   };
 }
 
-async function refreshOrders() {
+async function refreshOrders(options = {}) {
   if (ordersRefreshPromise) {
     return ordersRefreshPromise;
   }
@@ -379,7 +584,7 @@ async function refreshOrders() {
     while (allOrders.length < 20 && pagesChecked < MAX_ORDER_PAGES) {
       const response = await fetchWithRetry("/entity/customerorder", {
         params: {
-          expand: "agent,owner,state,store",
+          expand: "agent,owner,state,store,demands",
           limit: ORDER_LIMIT,
           offset,
           order: "moment,desc"
@@ -399,12 +604,14 @@ async function refreshOrders() {
 
     const finalOrders = allOrders.slice(0, 20);
     const orders = await Promise.all(
-      finalOrders.map(async (order) => addStatusAction({
+      finalOrders.map(async (order) => addShipmentStatus({
         id: order.id,
+        meta: order.meta,
         name: order.name,
         counterparty: order.agent?.name,
         owner: order.owner?.name,
         status: order.state?.name,
+        demands: order.demands,
         totalQty: await getOrderTotalQty(order.id),
         shippingAddress: order.shipmentAddress,
         date: order.moment
@@ -519,7 +726,9 @@ app.get("/", async (req, res) => {
       return res.render("orders", { orders: [] });
     }
 
-    const orders = req.query.updated ? await refreshOrders() : await loadOrders();
+    const orders = req.query.updated
+      ? await refreshOrders({ forceShipmentRefresh: true })
+      : await loadOrders();
 
     if (req.query.updated) {
       setNoStore(res);
@@ -551,7 +760,8 @@ app.get("/confirm-status/:id/:status", async (req, res) => {
       order,
       wantedStatus,
       actionLabel: STATUS_ACTION_LABELS[wantedStatus] || wantedStatus,
-      passcodeError: null
+      passcodeError: null,
+      statusError: null
     });
   } catch (err) {
     console.log("Status confirmation error:", err.response?.status || err.message);
@@ -579,7 +789,8 @@ app.post("/update-status/:id/:status", async (req, res) => {
         order,
         wantedStatus,
         actionLabel: STATUS_ACTION_LABELS[wantedStatus] || wantedStatus,
-        passcodeError: "Wrong passcode"
+        passcodeError: "Wrong passcode",
+        statusError: null
       });
     }
 
@@ -588,7 +799,91 @@ app.post("/update-status/:id/:status", async (req, res) => {
     res.redirect("/?updated=1");
   } catch (err) {
     console.log("STATUS UPDATE ERROR:", err.response?.data || err.message);
-    res.send("Failed to update status");
+
+    try {
+      const orderId = req.params.id;
+      const wantedStatus = decodeURIComponent(req.params.status);
+      const order = await getOrderForStatusChange(orderId);
+
+      setNoStore(res);
+      return res.status(400).render("confirm-status", {
+        order,
+        wantedStatus,
+        actionLabel: STATUS_ACTION_LABELS[wantedStatus] || wantedStatus,
+        passcodeError: null,
+        statusError: err.message || "Failed to update status"
+      });
+    } catch (renderErr) {
+      console.log("STATUS ERROR RENDER FAILED:", renderErr.response?.data || renderErr.message);
+      res.send("Failed to update status");
+    }
+  }
+});
+
+app.get("/confirm-shipment/:id", async (req, res) => {
+  try {
+    if (!TOKEN) {
+      console.log("Missing TOKEN environment variable");
+      return res.send("Shipment creation is not available");
+    }
+
+    const orderId = req.params.id;
+    const order = await getOrderForStatusChange(orderId);
+
+    if (order.status !== "READY TO DISPATCH") {
+      return res.send("Shipment can be created only for READY TO DISPATCH orders");
+    }
+
+    setNoStore(res);
+    res.render("confirm-shipment", {
+      order,
+      passcodeError: null,
+      shipmentMessage: null
+    });
+  } catch (err) {
+    console.log("Shipment confirmation error:", err.response?.status || err.message);
+    res.send("Cannot create shipment for this order");
+  }
+});
+
+app.post("/create-shipment/:id", async (req, res) => {
+  try {
+    if (!TOKEN) {
+      console.log("Missing TOKEN environment variable");
+      return res.send("Failed to create shipment");
+    }
+
+    const orderId = req.params.id;
+    const passcode = req.body.passcode;
+
+    if (!isValidStatusPasscode(passcode)) {
+      const order = await getOrderForStatusChange(orderId);
+
+      setNoStore(res);
+      return res.status(403).render("confirm-shipment", {
+        order,
+        passcodeError: "Wrong passcode",
+        shipmentMessage: null
+      });
+    }
+
+    const result = await ensureShipmentExists(orderId);
+
+    setNoStore(res);
+    return res.render("confirm-shipment", {
+      order: {
+        id: result.order.id,
+        name: result.order.name,
+        status: result.order.state?.name
+      },
+      passcodeError: null,
+      shipmentMessage: result.created
+        ? "Shipment created successfully"
+        : "Shipment already exists for this order"
+    });
+  } catch (err) {
+    console.log("SHIPMENT CREATE ERROR:", err.response?.data || err.message);
+    res.send("Failed to create shipment");
   }
 });
 
@@ -619,6 +914,64 @@ app.get("/order/:id", async (req, res) => {
     }
 
     res.send("Error loading packing list");
+  }
+});
+
+app.get("/transfers", async (req, res) => {
+  try {
+    if (!TOKEN) return res.send("Missing TOKEN");
+    const response = await fetchWithRetry("/entity/move", {
+      params: { 
+        limit: 5, 
+        order: "moment,desc",
+        expand: "sourceStore,targetStore"
+      }
+    });
+    
+    const transfers = (response.data.rows || []).map(m => {
+      const d = new Date(m.moment);
+      const onlyDate = String(d.getDate()).padStart(2, "0") + "." + String(d.getMonth() + 1).padStart(2, "0") + "." + d.getFullYear() + " " + String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0");
+      return {
+        id: m.id,
+        name: m.name,
+        date: onlyDate,
+        source: m.sourceStore?.name,
+        target: m.targetStore?.name
+      };
+    });
+    
+    setNoStore(res);
+    res.render("transfers", { transfers });
+  } catch (err) {
+    console.log("Transfers error:", err.message);
+    res.send("Error loading transfers");
+  }
+});
+
+app.get("/transfer/:id", async (req, res) => {
+  try {
+    const id = req.params.id;
+    const [moveRes, posRes] = await Promise.all([
+      fetchWithRetry(`/entity/move/${id}`, { params: { expand: "sourceStore,targetStore" } }),
+      fetchWithRetry(`/entity/move/${id}/positions`, { params: { expand: "assortment" } })
+    ]);
+    
+    const m = moveRes.data;
+    const items = (posRes.data.rows || []).map(item => ({
+      name: item.assortment?.name || "No name",
+      quantity: item.quantity
+    }));
+    
+    setNoStore(res);
+    res.render("transfer-packing", {
+      transferName: m.name,
+      source: m.sourceStore?.name,
+      target: m.targetStore?.name,
+      items
+    });
+  } catch (err) {
+    console.log("Transfer packing error:", err.message);
+    res.send("Error loading transfer items");
   }
 });
 

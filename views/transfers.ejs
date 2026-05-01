@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Transfers</title>
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <style>
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "San Francisco", Arial;
+      background: #f5f5f7;
+      color: #1d1d1f;
+    }
+
+    .container {
+      padding: 20px;
+    }
+
+    h2 {
+      text-align: center;
+      font-weight: 600;
+      margin-bottom: 20px;
+    }
+
+    .card {
+      background: white;
+      border-radius: 20px;
+      padding: 15px;
+      margin-bottom: 15px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+    }
+
+    .row {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 6px;
+      font-size: 14px;
+    }
+
+    .label {
+      color: #6e6e73;
+    }
+
+    .value {
+      font-weight: 600;
+    }
+
+    .address-box {
+      font-size: 13px;
+      white-space: pre-line;
+      background: #f2f2f7;
+      padding: 10px;
+      border-radius: 10px;
+      margin-top: 8px;
+    }
+
+    .btn {
+      display: block;
+      text-align: center;
+      background: #0071e3;
+      color: white;
+      padding: 10px;
+      border-radius: 12px;
+      text-decoration: none;
+      margin-top: 12px;
+      font-weight: 500;
+    }
+
+    .btn:hover {
+      background: #005bb5;
+    }
+
+    .back-btn {
+      background: #5856d6;
+      display: inline-block;
+      margin-bottom: 20px;
+      font-size: 14px;
+      padding: 8px 16px;
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="container">
+
+  <a href="/" class="btn back-btn">⬅ Back to Orders</a>
+
+  <h2>⇆ Latest Transfers</h2>
+
+  <% if (transfers && transfers.length > 0) { %>
+    <% transfers.forEach(transfer => { %>
+      <div class="card">
+        <div class="row">
+          <span class="label">Transfer No.</span>
+          <span class="value"><%= transfer.name %></span>
+        </div>
+
+        <div class="row">
+          <span class="label">Date Created</span>
+          <span class="value"><%= transfer.date %></span>
+        </div>
+
+        <div style="margin-top: 10px;">
+          <div class="label">Source Warehouse</div>
+          <div class="address-box">
+            <%= transfer.source %>
+          </div>
+        </div>
+
+        <div style="margin-top: 10px;">
+          <div class="label">Target Warehouse</div>
+          <div class="address-box">
+            <%= transfer.target %>
+          </div>
+        </div>
+
+        <a class="btn" href="/transfer/<%= transfer.id %>">
+          View Items
+        </a>
+      </div>
+    <% }) %>
+  <% } else { %>
+    <p style="text-align:center; color: #6e6e73;">No transfers found.</p>
+  <% } %>
+
+</div>
+
+</body>
+</html>

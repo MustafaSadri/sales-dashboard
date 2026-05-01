@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Confirm Status</title>
+  <title>Create Shipment</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <style>
@@ -44,21 +44,14 @@
       word-break: break-word;
     }
 
-    .status {
-      display: inline-block;
+    .notice {
       background: #e6f4ea;
       color: #1e7e34;
-      padding: 5px 10px;
-      border-radius: 10px;
-      font-size: 12px;
+      border-radius: 12px;
+      padding: 10px;
+      margin-top: 14px;
+      font-size: 14px;
       font-weight: 600;
-      margin-top: 4px;
-    }
-
-    .actions {
-      display: flex;
-      gap: 10px;
-      margin-top: 20px;
     }
 
     .passcode {
@@ -85,6 +78,12 @@
       font-size: 13px;
       margin-top: 8px;
       font-weight: 600;
+    }
+
+    .actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
     }
 
     .btn {
@@ -119,7 +118,7 @@
 <body>
 
 <div class="container">
-  <h2>Confirm Status</h2>
+  <h2>Create Shipment</h2>
 
   <div class="card">
     <div class="label">Order</div>
@@ -128,36 +127,39 @@
     <div class="label">Current Status</div>
     <div class="value"><%= order.status %></div>
 
-    <div class="label">Change To</div>
-    <div class="status"><%= wantedStatus %></div>
+    <div class="label">Shipment No</div>
+    <div class="value"><%= order.name %></div>
 
-    <form method="POST" action="/update-status/<%= order.id %>/<%= encodeURIComponent(wantedStatus) %>">
-      <div class="label">Passcode</div>
-      <input
-        class="passcode"
-        type="password"
-        name="passcode"
-        inputmode="numeric"
-        pattern="[0-9]{4}"
-        maxlength="4"
-        placeholder="Enter 4 digit passcode"
-        autocomplete="off"
-        required
-      >
-
-      <% if (passcodeError) { %>
-        <div class="error"><%= passcodeError %></div>
-      <% } %>
-
-      <% if (statusError) { %>
-        <div class="error"><%= statusError %></div>
-      <% } %>
-
+    <% if (shipmentMessage) { %>
+      <div class="notice"><%= shipmentMessage %></div>
       <div class="actions">
-        <a class="btn cancel" href="/">Cancel</a>
-        <button class="btn" type="submit">OK</button>
+        <a class="btn" href="/?updated=1">Back</a>
       </div>
-    </form>
+    <% } else { %>
+      <form method="POST" action="/create-shipment/<%= order.id %>">
+        <div class="label">Passcode</div>
+        <input
+          class="passcode"
+          type="password"
+          name="passcode"
+          inputmode="numeric"
+          pattern="[0-9]{4}"
+          maxlength="4"
+          placeholder="Enter 4 digit passcode"
+          autocomplete="off"
+          required
+        >
+
+        <% if (passcodeError) { %>
+          <div class="error"><%= passcodeError %></div>
+        <% } %>
+
+        <div class="actions">
+          <a class="btn cancel" href="/">Cancel</a>
+          <button class="btn" type="submit">Create</button>
+        </div>
+      </form>
+    <% } %>
   </div>
 </div>
 
