@@ -61,6 +61,32 @@
       margin-top: 20px;
     }
 
+    .passcode {
+      width: 100%;
+      box-sizing: border-box;
+      margin-top: 8px;
+      padding: 11px 12px;
+      border: 1px solid #d1d1d6;
+      border-radius: 12px;
+      background: white;
+      color: #1d1d1f;
+      font: inherit;
+      font-size: 16px;
+      outline: none;
+    }
+
+    .passcode:focus {
+      border-color: #0071e3;
+      box-shadow: 0 0 0 3px rgba(0,113,227,0.12);
+    }
+
+    .error {
+      color: #b00020;
+      font-size: 13px;
+      margin-top: 8px;
+      font-weight: 600;
+    }
+
     .btn {
       flex: 1;
       text-align: center;
@@ -105,9 +131,28 @@
     <div class="label">Change To</div>
     <div class="status"><%= wantedStatus %></div>
 
-    <form class="actions" method="POST" action="/update-status/<%= order.id %>/<%= encodeURIComponent(wantedStatus) %>">
-      <a class="btn cancel" href="/">Cancel</a>
-      <button class="btn" type="submit">OK</button>
+    <form method="POST" action="/update-status/<%= order.id %>/<%= encodeURIComponent(wantedStatus) %>">
+      <div class="label">Passcode</div>
+      <input
+        class="passcode"
+        type="password"
+        name="passcode"
+        inputmode="numeric"
+        pattern="[0-9]{4}"
+        maxlength="4"
+        placeholder="Enter 4 digit passcode"
+        autocomplete="off"
+        required
+      >
+
+      <% if (passcodeError) { %>
+        <div class="error"><%= passcodeError %></div>
+      <% } %>
+
+      <div class="actions">
+        <a class="btn cancel" href="/">Cancel</a>
+        <button class="btn" type="submit">OK</button>
+      </div>
     </form>
   </div>
 </div>

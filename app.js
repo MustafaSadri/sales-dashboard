@@ -21,6 +21,7 @@ const PREWARM_PACKING_COUNT = 5;
 const ORDER_LIMIT = 50;
 const MAX_ORDER_PAGES = 6;
 const WAREHOUSE_NAME = "yuzhnie Varota";
+const STATUS_PASSCODE = process.env.STATUS_PASSCODE || "1122";
 const ALLOWED_STATUSES = new Set(["ACCEPTED", "NEW", "READY TO DISPATCH"]);
 const STATUS_TRANSITIONS = {
   NEW: "ACCEPTED",
@@ -340,6 +341,10 @@ function assertAllowedStatusChange(order, wantedStatus) {
   }
 }
 
+function isValidStatusPasscode(passcode) {
+  return String(passcode || "") === STATUS_PASSCODE;
+}
+
 async function updateOrderStatus(orderId, wantedStatus) {
   const order = await getFreshOrderForStatusChange(orderId);
 
@@ -545,7 +550,8 @@ app.get("/confirm-status/:id/:status", async (req, res) => {
     res.render("confirm-status", {
       order,
       wantedStatus,
-      actionLabel: STATUS_ACTION_LABELS[wantedStatus] || wantedStatus
+      actionLabel: STATUS_ACTION_LABELS[wantedStatus] || wantedStatus,
+      passcodeError: null
     });
   } catch (err) {
     console.log("Status confirmation error:", err.response?.status || err.message);
@@ -562,6 +568,20 @@ app.post("/update-status/:id/:status", async (req, res) => {
 
     const orderId = req.params.id;
     const wantedStatus = decodeURIComponent(req.params.status);
+    const passcode = req.body.passcode;
+
+    if (!isValidStatusPasscode(passcode)) {
+      const order = await getOrderForStatusChange(orderId);
+
+      assertAllowedStatusChange(order, wantedStatus);
+      setNoStore(res);
+      return res.status(403).render("confirm-status", {
+        order,
+        wantedStatus,
+        actionLabel: STATUS_ACTION_LABELS[wantedStatus] || wantedStatus,
+        passcodeError: "Wrong passcode"
+      });
+    }
 
     await updateOrderStatus(orderId, wantedStatus);
     setNoStore(res);
