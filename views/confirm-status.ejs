@@ -131,7 +131,7 @@
     <div class="label">Change To</div>
     <div class="status"><%= wantedStatus %></div>
 
-    <form method="POST" action="/update-status/<%= order.id %>/<%= encodeURIComponent(wantedStatus) %>">
+    <form method="POST" action="/update-status/<%= order.id %>/<%= encodeURIComponent(wantedStatus) %>" onsubmit="const btn = this.querySelector('button[type=submit]'); btn.disabled = true; btn.innerText = 'Processing...'; btn.style.opacity = '0.7';">
       <div class="label">Passcode</div>
       <input
         class="passcode"

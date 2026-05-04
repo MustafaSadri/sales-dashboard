@@ -121,6 +121,25 @@
       font-weight: 600;
       text-align: center;
     }
+
+    .success-toast {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: #34c759;
+      color: white;
+      padding: 15px 25px;
+      border-radius: 12px;
+      font-weight: 600;
+      box-shadow: 0 10px 25px rgba(52,199,89,0.4);
+      transition: opacity 0.5s ease, transform 0.5s ease;
+      z-index: 1000;
+      transform: translateY(0);
+    }
+    .success-toast.hide {
+      opacity: 0;
+      transform: translateY(-20px);
+    }
   </style>
   <script>
   setTimeout(() => {
@@ -136,6 +155,19 @@
   <a href="/transfers" class="btn" style="display:inline-block; margin-bottom: 20px; font-size: 14px; padding: 8px 16px; background: #5856d6;">⇆ View Transfers</a>
 
   <h2>📦 Orders</h2>
+
+  <% if (typeof successMessage !== 'undefined' && successMessage) { %>
+    <div class="success-toast" id="successToast"><%= successMessage %></div>
+    <script>
+      setTimeout(() => {
+        const toast = document.getElementById('successToast');
+        if(toast) {
+          toast.classList.add('hide');
+          setTimeout(() => toast.remove(), 500);
+        }
+      }, 12000);
+    </script>
+  <% } %>
 
   <% orders.forEach(order => { %>
 
@@ -190,32 +222,46 @@
         </div>
       </div>
 
-      <!-- Button -->
-      <a class="btn" href="/order/<%= order.id %>">
-        View Packing
-      </a>
-
-      <% if (order.shipmentCreated) { %>
-        <div class="shipment-flag">Shipment Created</div>
-      <% } %>
-
-      <% if (order.nextStatus) { %>
-        <a class="btn status-btn" href="/confirm-status/<%= order.id %>/<%= encodeURIComponent(order.nextStatus) %>">
-          <%= order.statusActionLabel %>
+        <!-- Button -->
+        <a class="btn" href="/order/<%= order.id %>">
+          View Packing
         </a>
-      <% } %>
 
-      <% if (order.canCreateShipment) { %>
-        <a class="btn shipment-btn" href="/confirm-shipment/<%= order.id %>">
-          Create Shipment
-        </a>
-      <% } %>
+        <% if (order.nextStatus) { %>
+          <a class="btn status-btn" href="/confirm-status/<%= order.id %>/<%= encodeURIComponent(order.nextStatus) %>" onclick="this.style.pointerEvents='none'; this.innerText='Loading...'; this.style.opacity='0.7';">
+            <%= order.statusActionLabel %>
+          </a>
+        <% } %>
 
     </div>
 
   <% }) %>
 
 </div>
+
+<style>
+.btn-create-shipment-circle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  width: 100px;
+  height: 100px;
+  border-radius: 20px;
+  background: #34c759;
+  color: white;
+  text-decoration: none;
+  font-weight: bold;
+  font-size: 14px;
+  box-shadow: 0 4px 10px rgba(52,199,89,0.4);
+  transition: transform 0.2s;
+  line-height: 1.4;
+}
+.btn-create-shipment-circle:hover {
+  transform: scale(1.05);
+  background: #2dae4c;
+}
+</style>
 
 </body>
 </html>

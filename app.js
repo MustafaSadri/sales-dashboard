@@ -33,7 +33,7 @@ const STATUS_TRANSITIONS = {
 const STATUS_ACTION_LABELS = {
   ACCEPTED: "Accept",
   "READY TO DISPATCH": "Ready to Dispatch",
-  DISPATCHED: "Dispatch"
+  DISPATCHED: "Dispatch & Create Shipment"
 };
 const STATES_CACHE_MS = 10 * 60 * 1000;
 
@@ -63,6 +63,7 @@ const api = axios.create({
 });
 
 app.use(express.urlencoded({ extended: false }));
+app.disable("x-powered-by");
 
 function loadEnvFile() {
   const envPath = path.join(__dirname, ".env");
@@ -158,7 +159,11 @@ async function postWithRetry(url, data, options = {}, retries = 2) {
 }
 
 function isWantedOrder(order) {
-  return order.store?.name === WAREHOUSE_NAME && ALLOWED_STATUSES.has(order.state?.name);
+  if (order.store?.name !== WAREHOUSE_NAME) {
+    return false;
+  }
+  const status = order.state?.name;
+  return ALLOWED_STATUSES.has(status);
 }
 
 function getNextStatus(status) {
@@ -173,14 +178,11 @@ function getStatusActionLabel(status) {
 
 function addStatusAction(order) {
   const nextStatus = getNextStatus(order.status);
-  const shipmentCreated = Boolean(order.shipmentCreated);
-
+  
   return {
     ...order,
-    shipmentCreated,
     nextStatus,
-    statusActionLabel: getStatusActionLabel(order.status),
-    canCreateShipment: order.status === "READY TO DISPATCH" && !shipmentCreated
+    statusActionLabel: getStatusActionLabel(order.status)
   };
 }
 
@@ -367,25 +369,7 @@ async function getDemandStateByName(statusName) {
   return selected;
 }
 
-async function getOrderForStatusChange(orderId) {
-  const cached = findCachedOrder(orderId);
-
-  if (cached) {
-    return cached;
-  }
-
-  const response = await fetchWithRetry(`/entity/customerorder/${orderId}`, {
-    params: {
-      expand: "state"
-    }
-  });
-
-  return {
-    id: response.data.id,
-    name: response.data.name,
-    status: response.data.state?.name
-  };
-}
+// getOrderForStatusChange removed, use getFreshOrderForStatusChange
 
 async function getFullOrderForShipment(orderId) {
   const [orderRes, positionsRes] = await Promise.all([
@@ -407,19 +391,7 @@ async function getFullOrderForShipment(orderId) {
   };
 }
 
-function addShipmentStatus(order) {
-  if (order.status !== "READY TO DISPATCH") {
-    return addStatusAction(order);
-  }
-
-  const hasDemandInMoySklad = order.demands && order.demands.length > 0;
-  const hasCachedDemand = getCachedShipmentStatus(order.id)?.exists;
-
-  return addStatusAction({
-    ...order,
-    shipmentCreated: Boolean(hasDemandInMoySklad || hasCachedDemand)
-  });
-}
+// addShipmentStatus removed
 
 function buildShipmentPositions(order) {
   return order.positions.map(position => {
@@ -441,84 +413,10 @@ function buildShipmentPositions(order) {
   });
 }
 
-function validateShipmentOrder(order) {
-  if (order.store?.name !== WAREHOUSE_NAME) {
-    throw new Error("Shipment can be created only for yuzhnie Varota warehouse");
-  }
 
-  if (order.state?.name !== "READY TO DISPATCH") {
-    throw new Error("Shipment can be created only for READY TO DISPATCH orders");
-  }
 
-  if (!order.positions.length) {
-    throw new Error("Order has no positions");
-  }
 
-  if (!order.agent?.meta || !order.organization?.meta || !order.store?.meta) {
-    throw new Error("Order is missing required MoySklad fields");
-  }
-}
-
-async function ensureShipmentExists(orderId) {
-  const order = await getFullOrderForShipment(orderId);
-
-  validateShipmentOrder(order);
-
-  if (order.demands && order.demands.length > 0) {
-    const existingShipment = order.demands[0];
-    saveShipmentStatus(orderId, existingShipment);
-
-    return {
-      created: false,
-      shipment: existingShipment,
-      order
-    };
-  }
-
-  const shipmentState = await getDemandStateByName(SHIPMENT_STATUS_NAME);
-
-  const response = await postWithRetry("/entity/demand", {
-    name: order.name,
-    applicable: true,
-    state: {
-      meta: shipmentState.meta
-    },
-    agent: {
-      meta: order.agent.meta
-    },
-    organization: {
-      meta: order.organization.meta
-    },
-    store: {
-      meta: order.store.meta
-    },
-    customerOrder: {
-      meta: order.meta
-    },
-    positions: buildShipmentPositions(order)
-  });
-
-  saveShipmentStatus(orderId, response.data);
-  clearOrdersCache();
-
-  return {
-    created: true,
-    shipment: response.data,
-    order
-  };
-}
-
-async function assertShipmentExistsForDispatch(orderId) {
-  const order = await getFullOrderForShipment(orderId);
-
-  validateShipmentOrder(order);
-
-  if (!order.demands || order.demands.length === 0) {
-    throw new Error("Create shipment before dispatching this order");
-  }
-
-  return order.demands[0];
-}
+// removed assertShipmentExistsForDispatch
 
 async function getFreshOrderForStatusChange(orderId) {
   const response = await fetchWithRetry(`/entity/customerorder/${orderId}`, {
@@ -547,21 +445,42 @@ function isValidStatusPasscode(passcode) {
 }
 
 async function updateOrderStatus(orderId, wantedStatus) {
-  const order = await getFreshOrderForStatusChange(orderId);
+  const [order, selectedState] = await Promise.all([
+    getFreshOrderForStatusChange(orderId),
+    getMoyskladStateByName(wantedStatus)
+  ]);
 
   assertAllowedStatusChange(order, wantedStatus);
-
-  if (wantedStatus === "DISPATCHED") {
-    await assertShipmentExistsForDispatch(orderId);
-  }
-
-  const selectedState = await getMoyskladStateByName(wantedStatus);
 
   await putWithRetry(`/entity/customerorder/${orderId}`, {
     state: {
       meta: selectedState.meta
     }
   });
+
+  if (wantedStatus === "DISPATCHED") {
+    const fullOrder = await getFullOrderForShipment(orderId);
+    const hasDemand = fullOrder.demands && fullOrder.demands.length > 0;
+    
+    if (!hasDemand) {
+      const shipmentState = await getDemandStateByName(SHIPMENT_STATUS_NAME);
+
+      const shipmentPayload = {
+        name: String(fullOrder.name),
+        organization: { meta: fullOrder.organization.meta },
+        agent: { meta: fullOrder.agent.meta },
+        store: { meta: fullOrder.store.meta },
+        customerOrder: { meta: fullOrder.meta },
+        state: shipmentState ? { meta: shipmentState.meta } : undefined,
+        positions: buildShipmentPositions(fullOrder)
+      };
+
+      if (!shipmentPayload.state) delete shipmentPayload.state;
+
+      const demandRes = await postWithRetry("/entity/demand", shipmentPayload);
+      saveShipmentStatus(orderId, demandRes.data);
+    }
+  }
 
   clearOrdersCache();
 
@@ -604,7 +523,7 @@ async function refreshOrders(options = {}) {
 
     const finalOrders = allOrders.slice(0, 20);
     const orders = await Promise.all(
-      finalOrders.map(async (order) => addShipmentStatus({
+      finalOrders.map(async (order) => addStatusAction({
         id: order.id,
         meta: order.meta,
         name: order.name,
@@ -730,16 +649,21 @@ app.get("/", async (req, res) => {
       ? await refreshOrders({ forceShipmentRefresh: true })
       : await loadOrders();
 
-    if (req.query.updated) {
+    if (req.query.updated || req.query.success) {
       setNoStore(res);
     } else {
       setFastPageCache(res);
     }
 
-    res.render("orders", { orders });
+    let successMessage = null;
+    if (req.query.success === "dispatch") {
+      successMessage = "Order dispatched and shipment created successfully! ✅";
+    }
+
+    res.render("orders", { orders, successMessage });
   } catch (err) {
     console.log("Final error loading orders:", err.response?.status || err.message);
-    res.render("orders", { orders: [] });
+    res.render("orders", { orders: [], successMessage: null });
   }
 });
 
@@ -752,9 +676,14 @@ app.get("/confirm-status/:id/:status", async (req, res) => {
 
     const orderId = req.params.id;
     const wantedStatus = decodeURIComponent(req.params.status);
-    const order = await getOrderForStatusChange(orderId);
+    const order = await getFreshOrderForStatusChange(orderId);
 
-    assertAllowedStatusChange(order, wantedStatus);
+    try {
+      assertAllowedStatusChange(order, wantedStatus);
+    } catch (err) {
+      return res.redirect("/?updated=1");
+    }
+
     setNoStore(res);
     res.render("confirm-status", {
       order,
@@ -781,9 +710,14 @@ app.post("/update-status/:id/:status", async (req, res) => {
     const passcode = req.body.passcode;
 
     if (!isValidStatusPasscode(passcode)) {
-      const order = await getOrderForStatusChange(orderId);
+      const order = await getFreshOrderForStatusChange(orderId);
 
-      assertAllowedStatusChange(order, wantedStatus);
+      try {
+        assertAllowedStatusChange(order, wantedStatus);
+      } catch (err) {
+        return res.redirect("/?updated=1");
+      }
+
       setNoStore(res);
       return res.status(403).render("confirm-status", {
         order,
@@ -796,14 +730,14 @@ app.post("/update-status/:id/:status", async (req, res) => {
 
     await updateOrderStatus(orderId, wantedStatus);
     setNoStore(res);
-    res.redirect("/?updated=1");
+    res.redirect(wantedStatus === "DISPATCHED" ? "/?success=dispatch" : "/?updated=1");
   } catch (err) {
     console.log("STATUS UPDATE ERROR:", err.response?.data || err.message);
 
     try {
       const orderId = req.params.id;
       const wantedStatus = decodeURIComponent(req.params.status);
-      const order = await getOrderForStatusChange(orderId);
+      const order = await getFreshOrderForStatusChange(orderId);
 
       setNoStore(res);
       return res.status(400).render("confirm-status", {
@@ -820,72 +754,6 @@ app.post("/update-status/:id/:status", async (req, res) => {
   }
 });
 
-app.get("/confirm-shipment/:id", async (req, res) => {
-  try {
-    if (!TOKEN) {
-      console.log("Missing TOKEN environment variable");
-      return res.send("Shipment creation is not available");
-    }
-
-    const orderId = req.params.id;
-    const order = await getOrderForStatusChange(orderId);
-
-    if (order.status !== "READY TO DISPATCH") {
-      return res.send("Shipment can be created only for READY TO DISPATCH orders");
-    }
-
-    setNoStore(res);
-    res.render("confirm-shipment", {
-      order,
-      passcodeError: null,
-      shipmentMessage: null
-    });
-  } catch (err) {
-    console.log("Shipment confirmation error:", err.response?.status || err.message);
-    res.send("Cannot create shipment for this order");
-  }
-});
-
-app.post("/create-shipment/:id", async (req, res) => {
-  try {
-    if (!TOKEN) {
-      console.log("Missing TOKEN environment variable");
-      return res.send("Failed to create shipment");
-    }
-
-    const orderId = req.params.id;
-    const passcode = req.body.passcode;
-
-    if (!isValidStatusPasscode(passcode)) {
-      const order = await getOrderForStatusChange(orderId);
-
-      setNoStore(res);
-      return res.status(403).render("confirm-shipment", {
-        order,
-        passcodeError: "Wrong passcode",
-        shipmentMessage: null
-      });
-    }
-
-    const result = await ensureShipmentExists(orderId);
-
-    setNoStore(res);
-    return res.render("confirm-shipment", {
-      order: {
-        id: result.order.id,
-        name: result.order.name,
-        status: result.order.state?.name
-      },
-      passcodeError: null,
-      shipmentMessage: result.created
-        ? "Shipment created successfully"
-        : "Shipment already exists for this order"
-    });
-  } catch (err) {
-    console.log("SHIPMENT CREATE ERROR:", err.response?.data || err.message);
-    res.send("Failed to create shipment");
-  }
-});
 
 app.get("/order/:id", async (req, res) => {
   try {
