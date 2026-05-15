@@ -3,165 +3,236 @@
 <head>
   <title>Create Shipment</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
+  <script>(function(){var t=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-theme',t);})();</script>
   <style>
+    :root {
+      --bg: #f0f4f8;
+      --surface: #ffffff;
+      --surface2: #f8fafc;
+      --text: #111827;
+      --text-muted: #6b7280;
+      --border: #e5e7eb;
+      --topbar: rgba(255,255,255,0.88);
+      --accent: #10b981;
+      --accent-hover: #059669;
+      --radius: 18px;
+    }
+    [data-theme="dark"] {
+      --bg: #0d1117;
+      --surface: #161b22;
+      --surface2: #21262d;
+      --text: #e6edf3;
+      --text-muted: #8b949e;
+      --border: #30363d;
+      --topbar: rgba(22,27,34,0.92);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
     body {
-      margin: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "San Francisco", Arial;
-      background: #f5f5f7;
-      color: #1d1d1f;
+      font-family: -apple-system, 'Segoe UI', BlinkMacSystemFont, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      transition: background 0.25s, color 0.25s;
     }
 
-    .container {
-      padding: 20px;
-      max-width: 520px;
+    .topbar {
+      position: sticky; top: 0; z-index: 10;
+      background: var(--topbar);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border-bottom: 1px solid var(--border);
+      height: 56px;
+      display: flex; align-items: center;
+      padding: 0 20px;
+    }
+    .topbar-inner {
+      width: 100%; max-width: 480px; margin: 0 auto;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .topbar-title { font-size: 15px; font-weight: 700; }
+    .theme-btn {
+      width: 36px; height: 36px;
+      border-radius: 9px; border: 1px solid var(--border);
+      background: var(--surface); color: var(--text); font-size: 16px;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      transition: background 0.2s;
+    }
+    .theme-btn:hover { background: var(--surface2); }
+
+    .main {
+      max-width: 480px;
       margin: 0 auto;
+      padding: 28px 16px 60px;
     }
-
-    h2 {
-      text-align: center;
-      font-weight: 600;
-      margin-bottom: 20px;
+    .page-title {
+      font-size: 22px; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 20px;
     }
 
     .card {
-      background: white;
-      border-radius: 20px;
-      padding: 18px;
-      box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+      background: var(--surface);
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+      overflow: hidden;
     }
 
-    .label {
-      color: #6e6e73;
-      font-size: 14px;
-      margin-top: 12px;
+    .card-section {
+      padding: 20px;
+      border-bottom: 1px solid var(--border);
     }
+    .card-section:last-child { border-bottom: none; }
 
-    .value {
-      font-weight: 600;
-      font-size: 16px;
-      margin-top: 4px;
-      word-break: break-word;
+    .info-label {
+      font-size: 10px; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.6px;
+      color: var(--text-muted); margin-bottom: 4px;
     }
+    .info-value {
+      font-size: 16px; font-weight: 700; word-break: break-word; margin-bottom: 14px;
+    }
+    .info-value:last-child { margin-bottom: 0; }
 
     .notice {
-      background: #e6f4ea;
-      color: #1e7e34;
-      border-radius: 12px;
-      padding: 10px;
-      margin-top: 14px;
-      font-size: 14px;
-      font-weight: 600;
+      display: flex; align-items: center; gap: 10px;
+      background: #d1fae5; color: #065f46;
+      border-radius: 10px; padding: 14px 16px;
+      font-size: 14px; font-weight: 600;
     }
+    [data-theme="dark"] .notice { background: #002e12; color: #6ee7b7; }
+    .notice-icon { font-size: 20px; flex-shrink: 0; }
 
-    .passcode {
+    .form-label {
+      font-size: 13px; font-weight: 600;
+      color: var(--text-muted); margin-bottom: 8px; display: block;
+    }
+    .input {
       width: 100%;
-      box-sizing: border-box;
-      margin-top: 8px;
-      padding: 11px 12px;
-      border: 1px solid #d1d1d6;
-      border-radius: 12px;
-      background: white;
-      color: #1d1d1f;
-      font: inherit;
-      font-size: 16px;
+      padding: 13px 14px;
+      border: 1.5px solid var(--border);
+      border-radius: 11px;
+      background: var(--surface2);
+      color: var(--text);
+      font-family: inherit; font-size: 18px;
+      letter-spacing: 4px; text-align: center;
       outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
     }
-
-    .passcode:focus {
-      border-color: #0071e3;
-      box-shadow: 0 0 0 3px rgba(0,113,227,0.12);
+    .input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(16,185,129,0.15);
+      background: var(--surface);
     }
-
-    .error {
-      color: #b00020;
-      font-size: 13px;
-      margin-top: 8px;
-      font-weight: 600;
+    .error-msg {
+      margin-top: 10px; padding: 10px 14px;
+      background: #fee2e2; color: #991b1b;
+      border-radius: 9px; font-size: 13px; font-weight: 600;
     }
+    [data-theme="dark"] .error-msg { background: #3a0a0a; color: #fca5a5; }
 
     .actions {
-      display: flex;
-      gap: 10px;
-      margin-top: 20px;
+      display: flex; gap: 10px;
+      padding: 16px 20px;
+      background: var(--surface2);
+      border-top: 1px solid var(--border);
     }
-
     .btn {
-      flex: 1;
-      text-align: center;
-      background: #0071e3;
-      color: white;
-      padding: 11px 10px;
-      border-radius: 12px;
-      text-decoration: none;
-      border: none;
-      font: inherit;
-      font-weight: 500;
-      cursor: pointer;
+      flex: 1; text-align: center;
+      padding: 13px 10px;
+      border-radius: 11px; font-size: 14px; font-weight: 700;
+      text-decoration: none; border: none;
+      cursor: pointer; font-family: inherit;
+      transition: opacity 0.2s, transform 0.1s;
     }
-
-    .btn:hover {
-      background: #005bb5;
-    }
-
-    .cancel {
-      background: #e5e5ea;
-      color: #1d1d1f;
-    }
-
-    .cancel:hover {
-      background: #d1d1d6;
-    }
+    .btn:active { transform: scale(0.97); }
+    .btn-cancel { background: var(--surface); border: 1.5px solid var(--border); color: var(--text); }
+    .btn-cancel:hover { background: var(--bg); }
+    .btn-confirm { background: var(--accent); color: #fff; }
+    .btn-confirm:hover { background: var(--accent-hover); }
+    .btn-back { background: var(--accent); color: #fff; flex: none; padding: 13px 28px; }
   </style>
 </head>
-
 <body>
 
-<div class="container">
-  <h2>Create Shipment</h2>
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="topbar-title">🚚 Create Shipment</div>
+    <button class="theme-btn" id="themeBtn" onclick="toggleTheme()"></button>
+  </div>
+</header>
+
+<main class="main">
+  <div class="page-title">Create Shipment</div>
 
   <div class="card">
-    <div class="label">Order</div>
-    <div class="value"><%= order.name %></div>
+    <div class="card-section">
+      <div class="info-label">Order</div>
+      <div class="info-value"><%= order.name %></div>
 
-    <div class="label">Current Status</div>
-    <div class="value"><%= order.status %></div>
+      <div class="info-label">Current Status</div>
+      <div class="info-value"><%= order.status %></div>
 
-    <div class="label">Shipment No</div>
-    <div class="value"><%= order.name %></div>
+      <div class="info-label">Shipment No.</div>
+      <div class="info-value" style="margin-bottom:0;"><%= order.name %></div>
+    </div>
 
     <% if (shipmentMessage) { %>
-      <div class="notice"><%= shipmentMessage %></div>
+      <div class="card-section">
+        <div class="notice">
+          <span class="notice-icon">✅</span>
+          <span><%= shipmentMessage %></span>
+        </div>
+      </div>
       <div class="actions">
-        <a class="btn" href="/?updated=1">Back</a>
+        <a class="btn btn-back" href="/?updated=1">Back to Orders</a>
       </div>
     <% } else { %>
-      <form method="POST" action="/create-shipment/<%= order.id %>">
-        <div class="label">Passcode</div>
-        <input
-          class="passcode"
-          type="password"
-          name="passcode"
-          inputmode="numeric"
-          pattern="[0-9]{4}"
-          maxlength="4"
-          placeholder="Enter 4 digit passcode"
-          autocomplete="off"
-          required
-        >
-
-        <% if (passcodeError) { %>
-          <div class="error"><%= passcodeError %></div>
-        <% } %>
+      <form method="POST" action="/create-shipment/<%= order.id %>"
+            onsubmit="var b=this.querySelector('[type=submit]');b.disabled=true;b.textContent='Creating…';b.style.opacity='0.65';">
+        <div class="card-section">
+          <label class="form-label" for="passcode">Enter 4-digit passcode</label>
+          <input
+            class="input"
+            id="passcode"
+            type="password"
+            name="passcode"
+            inputmode="numeric"
+            pattern="[0-9]{4}"
+            maxlength="4"
+            placeholder="••••"
+            autocomplete="off"
+            autofocus
+            required
+          >
+          <% if (passcodeError) { %>
+            <div class="error-msg">⚠️ <%= passcodeError %></div>
+          <% } %>
+        </div>
 
         <div class="actions">
-          <a class="btn cancel" href="/">Cancel</a>
-          <button class="btn" type="submit">Create</button>
+          <a class="btn btn-cancel" href="/">Cancel</a>
+          <button class="btn btn-confirm" type="submit">Create Shipment</button>
         </div>
       </form>
     <% } %>
   </div>
-</div>
+</main>
+
+<script>
+  function setIcon() {
+    var dark = document.documentElement.getAttribute('data-theme') === 'dark';
+    document.getElementById('themeBtn').textContent = dark ? '☀️' : '🌙';
+  }
+  function toggleTheme() {
+    var dark = document.documentElement.getAttribute('data-theme') === 'dark';
+    var next = dark ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    localStorage.setItem('theme', next);
+    setIcon();
+  }
+  setIcon();
+</script>
 
 </body>
 </html>

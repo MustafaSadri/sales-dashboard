@@ -1,267 +1,413 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Orders</title>
-
+  <title>Orders — Sales Dashboard</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
+  <script>(function(){var t=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-theme',t);})();</script>
   <style>
+    :root {
+      --bg: #f0f4f8;
+      --surface: #ffffff;
+      --surface2: #f8fafc;
+      --text: #111827;
+      --text-muted: #6b7280;
+      --border: #e5e7eb;
+      --topbar: rgba(255,255,255,0.88);
+      --card-shadow: 0 2px 12px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04);
+      --hover-shadow: 0 8px 28px rgba(0,0,0,0.1);
+      --radius: 18px;
+      --accent: #4f46e5;
+    }
+    [data-theme="dark"] {
+      --bg: #0d1117;
+      --surface: #161b22;
+      --surface2: #21262d;
+      --text: #e6edf3;
+      --text-muted: #8b949e;
+      --border: #30363d;
+      --topbar: rgba(22,27,34,0.92);
+      --card-shadow: 0 2px 12px rgba(0,0,0,0.35), 0 1px 3px rgba(0,0,0,0.25);
+      --hover-shadow: 0 8px 28px rgba(0,0,0,0.5);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
     body {
-      margin: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "San Francisco", Arial;
-      background: #f5f5f7;
-      color: #1d1d1f;
+      font-family: -apple-system, 'Segoe UI', BlinkMacSystemFont, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      transition: background 0.25s, color 0.25s;
     }
 
-    .container {
-      padding: 20px;
-    }
-
-    h2 {
-      text-align: center;
-      font-weight: 600;
-      margin-bottom: 20px;
-    }
-
-    .card {
-      background: white;
-      border-radius: 20px;
-      padding: 15px;
-      margin-bottom: 15px;
-      box-shadow: 0 5px 15px rgba(0,0,0,0.05);
-    }
-
-    .row {
+    /* ── TOP BAR ── */
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: var(--topbar);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border-bottom: 1px solid var(--border);
+      padding: 0 20px;
+      height: 56px;
       display: flex;
+      align-items: center;
+    }
+    .topbar-inner {
+      width: 100%;
+      max-width: 640px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
       justify-content: space-between;
-      margin-top: 6px;
-      font-size: 14px;
     }
-
-    .label {
-      color: #6e6e73;
+    .brand {
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: -0.4px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
     }
-
-    .value {
-      font-weight: 600;
+    .brand-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--accent);
+      display: inline-block;
     }
+    .topbar-right { display: flex; align-items: center; gap: 8px; }
 
-    .status {
-      padding: 4px 10px;
-      border-radius: 10px;
-      font-size: 12px;
-      font-weight: 600;
-    }
-
-    .accepted {
-      background: #e6f4ea;
-      color: #1e7e34;
-    }
-
-    .new {
-      background: #fff3cd;
-      color: #856404;
-    }
-
-    .ready {
-      background: #e8f0fe;
-      color: #174ea6;
-    }
-
-    .address-box {
-      font-size: 12px;
-      white-space: pre-line;
-      background: #f2f2f7;
-      padding: 10px;
-      border-radius: 10px;
-      margin-top: 8px;
-    }
-
-    .btn {
-      display: block;
-      text-align: center;
-      background: #0071e3;
-      color: white;
-      padding: 10px;
-      border-radius: 12px;
-      text-decoration: none;
-      margin-top: 12px;
-      font-weight: 500;
-    }
-
-    .btn:hover {
-      background: #005bb5;
-    }
-
-    .status-btn {
-      background: #ff9500; /* Vibrant Apple Orange */
-      color: white;
-    }
-
-    .status-btn:hover {
-      background: #e68600;
-    }
-
-    .shipment-btn {
-      background: #34c759; /* Vibrant Apple Green */
-      color: white;
-    }
-
-    .shipment-btn:hover {
-      background: #2dae4c;
-    }
-
-    .shipment-flag {
-      margin-top: 12px;
-      padding: 8px 10px;
-      border-radius: 10px;
-      background: #e6f4ea;
-      color: #1e7e34;
+    .nav-link {
       font-size: 13px;
       font-weight: 600;
-      text-align: center;
+      color: var(--accent);
+      text-decoration: none;
+      padding: 6px 12px;
+      border-radius: 8px;
+      background: rgba(79,70,229,0.08);
+      transition: background 0.2s;
+    }
+    .nav-link:hover { background: rgba(79,70,229,0.16); }
+
+    .theme-btn {
+      width: 38px; height: 38px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text);
+      font-size: 17px;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: background 0.2s, transform 0.15s;
+    }
+    .theme-btn:hover { background: var(--surface2); transform: scale(1.05); }
+
+    /* ── MAIN ── */
+    .main {
+      max-width: 640px;
+      margin: 0 auto;
+      padding: 24px 16px 60px;
     }
 
-    .success-toast {
-      position: fixed;
-      top: 20px;
-      right: 20px;
-      background: #34c759;
-      color: white;
-      padding: 15px 25px;
-      border-radius: 12px;
+    .page-title {
+      font-size: 26px;
+      font-weight: 800;
+      letter-spacing: -0.6px;
+      margin-bottom: 4px;
+    }
+    .page-sub {
+      font-size: 13px;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 22px;
+    }
+    .count-pill {
+      background: var(--accent);
+      color: #fff;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 20px;
+    }
+
+    /* ── CARD ── */
+    .card {
+      background: var(--surface);
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      border-left: 4px solid var(--border);
+      margin-bottom: 16px;
+      box-shadow: var(--card-shadow);
+      transition: transform 0.18s, box-shadow 0.18s;
+      overflow: hidden;
+    }
+    .card:hover { transform: translateY(-2px); box-shadow: var(--hover-shadow); }
+    .card[data-status="NEW"]              { border-left-color: #f59e0b; }
+    .card[data-status="ACCEPTED"]         { border-left-color: #10b981; }
+    .card[data-status="READY TO DISPATCH"]{ border-left-color: #6366f1; }
+
+    .card-body { padding: 18px 18px 14px; }
+
+    .card-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+    .order-name {
+      font-size: 17px;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+      line-height: 1.2;
+    }
+
+    /* STATUS BADGES */
+    .badge {
+      flex-shrink: 0;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 20px;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      white-space: nowrap;
+    }
+    .badge-new      { background: #fef3c7; color: #92400e; }
+    .badge-accepted { background: #d1fae5; color: #065f46; }
+    .badge-ready    { background: #ede9fe; color: #5b21b6; }
+    [data-theme="dark"] .badge-new      { background: #3a1a00; color: #fcd34d; }
+    [data-theme="dark"] .badge-accepted { background: #002e12; color: #6ee7b7; }
+    [data-theme="dark"] .badge-ready    { background: #1e0a4a; color: #c4b5fd; }
+
+    /* INFO GRID */
+    .info-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+    .info-label {
+      font-size: 10px;
       font-weight: 600;
-      box-shadow: 0 10px 25px rgba(52,199,89,0.4);
-      transition: opacity 0.5s ease, transform 0.5s ease;
-      z-index: 1000;
-      transform: translateY(0);
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      margin-bottom: 3px;
     }
-    .success-toast.hide {
-      opacity: 0;
-      transform: translateY(-20px);
+    .info-value {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text);
     }
-  </style>
-  <script>
-  setTimeout(() => {
-    location.reload();
-  }, 30000); // reload every 30 seconds
-</script>
-</head>
 
+    /* ADDRESS */
+    .address-box {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 12px;
+      margin-bottom: 0;
+    }
+    .address-label {
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      margin-bottom: 5px;
+    }
+    .address-text {
+      font-size: 13px;
+      color: var(--text);
+      white-space: pre-line;
+      line-height: 1.5;
+    }
+
+    /* CARD FOOTER */
+    .card-footer {
+      display: flex;
+      gap: 10px;
+      padding: 12px 18px;
+      background: var(--surface2);
+      border-top: 1px solid var(--border);
+    }
+    .btn {
+      flex: 1;
+      text-align: center;
+      padding: 11px 8px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 600;
+      text-decoration: none;
+      border: none;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.1s;
+      display: block;
+    }
+    .btn:active { transform: scale(0.97); }
+
+    .btn-view   { background: var(--surface); border: 1.5px solid var(--border); color: var(--text); }
+    .btn-view:hover { background: var(--bg); }
+    .btn-accept { background: #f59e0b; color: #fff; }
+    .btn-accept:hover { background: #d97706; }
+    .btn-ready  { background: #6366f1; color: #fff; }
+    .btn-ready:hover { background: #4f46e5; }
+    .btn-dispatch { background: #10b981; color: #fff; }
+    .btn-dispatch:hover { background: #059669; }
+
+    /* EMPTY */
+    .empty {
+      text-align: center;
+      padding: 80px 24px;
+      color: var(--text-muted);
+    }
+    .empty-icon { font-size: 52px; margin-bottom: 14px; }
+    .empty h3 { font-size: 17px; font-weight: 600; color: var(--text); margin-bottom: 6px; }
+
+    /* TOAST */
+    .toast {
+      position: fixed;
+      bottom: 28px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #10b981;
+      color: #fff;
+      padding: 12px 24px;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 600;
+      box-shadow: 0 8px 30px rgba(16,185,129,0.35);
+      z-index: 999;
+      transition: opacity 0.4s, transform 0.4s;
+      white-space: nowrap;
+    }
+    .toast.hide { opacity: 0; transform: translateX(-50%) translateY(16px); }
+  </style>
+</head>
 <body>
 
-<div class="container">
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <span class="brand-dot"></span>
+      Sales Dashboard
+    </div>
+    <div class="topbar-right">
+      <a href="/transfers" class="nav-link">⇆ Transfers</a>
+      <button class="theme-btn" id="themeBtn" onclick="toggleTheme()" title="Toggle theme"></button>
+    </div>
+  </div>
+</header>
 
-  <a href="/transfers" class="btn" style="display:inline-block; margin-bottom: 20px; font-size: 14px; padding: 8px 16px; background: #5856d6;">⇆ View Transfers</a>
-
-  <h2>📦 Orders</h2>
+<main class="main">
+  <div class="page-title">Orders</div>
+  <div class="page-sub">
+    <span class="count-pill"><%= orders.length %></span>
+    active orders
+  </div>
 
   <% if (typeof successMessage !== 'undefined' && successMessage) { %>
-    <div class="success-toast" id="successToast"><%= successMessage %></div>
+    <div class="toast" id="toast"><%= successMessage %></div>
     <script>
-      setTimeout(() => {
-        const toast = document.getElementById('successToast');
-        if(toast) {
-          toast.classList.add('hide');
-          setTimeout(() => toast.remove(), 500);
-        }
-      }, 12000);
+      setTimeout(function() {
+        var t = document.getElementById('toast');
+        if (t) { t.classList.add('hide'); setTimeout(function(){ t.remove(); }, 400); }
+      }, 4000);
     </script>
   <% } %>
 
-  <% orders.forEach(order => { %>
+  <% if (orders.length === 0) { %>
+    <div class="empty">
+      <div class="empty-icon">📭</div>
+      <h3>No active orders</h3>
+      <p>All orders are up to date.</p>
+    </div>
+  <% } %>
 
-    <div class="card">
-      <!-- Order + Status -->
-      <div class="row">
-        <span class="value"><%= order.name %></span>
-
-        <span class="status 
-          <%= order.status === 'ACCEPTED' ? 'accepted' : (order.status === 'READY TO DISPATCH' ? 'ready' : 'new') %>">
-          <%= order.status %>
-        </span>
+  <% orders.forEach(function(order) {
+    var d = new Date(order.date);
+    var onlyDate =
+      String(d.getDate()).padStart(2,'0') + '.' +
+      String(d.getMonth()+1).padStart(2,'0') + '.' +
+      d.getFullYear();
+    var badgeClass = order.status === 'ACCEPTED'         ? 'badge-accepted'
+                   : order.status === 'READY TO DISPATCH' ? 'badge-ready'
+                   : 'badge-new';
+    var btnClass   = order.nextStatus === 'DISPATCHED'   ? 'btn-dispatch'
+                   : order.nextStatus === 'READY TO DISPATCH' ? 'btn-ready'
+                   : 'btn-accept';
+  %>
+  <div class="card" data-status="<%= order.status %>">
+    <div class="card-body">
+      <div class="card-top">
+        <div class="order-name"><%= order.name %></div>
+        <span class="badge <%= badgeClass %>"><%= order.status %></span>
       </div>
 
-      <!-- Date (ONLY DATE) -->
-      <%
-        const d = new Date(order.date);
-        const onlyDate =
-          String(d.getDate()).padStart(2, "0") + "." +
-          String(d.getMonth() + 1).padStart(2, "0") + "." +
-          d.getFullYear();
-      %>
-
-      <div class="row">
-        <span class="label">Date Created</span>
-        <span class="value"><%= onlyDate %></span>
-      </div>
-
-      <!-- Counterparty -->
-      <div class="row">
-        <span class="label">Counterparty</span>
-        <span class="value"><%= order.counterparty %></span>
-      </div>
-
-      <!-- Owner -->
-      <div class="row">
-        <span class="label">Owner</span>
-        <span class="value"><%= order.owner %></span>
-      </div>
-
-      <!-- Total Quantity -->
-      <div class="row">
-        <span class="label">Total Quantity</span>
-        <span class="value"><%= order.totalQty %> pcs</span>
-      </div>
-
-      <!-- Shipping Address -->
-      <div style="margin-top:10px;">
-        <div class="label">Shipping Address</div>
-        <div class="address-box">
-          <%= order.shippingAddress || "No address available" %>
+      <div class="info-grid">
+        <div>
+          <div class="info-label">Date</div>
+          <div class="info-value"><%= onlyDate %></div>
+        </div>
+        <div>
+          <div class="info-label">Quantity</div>
+          <div class="info-value"><%= order.totalQty %> pcs</div>
+        </div>
+        <div>
+          <div class="info-label">Counterparty</div>
+          <div class="info-value"><%= order.counterparty || '—' %></div>
+        </div>
+        <div>
+          <div class="info-label">Owner</div>
+          <div class="info-value"><%= order.owner || '—' %></div>
         </div>
       </div>
 
-        <!-- Button -->
-        <a class="btn" href="/order/<%= order.id %>">
-          View Packing
-        </a>
-
-        <% if (order.nextStatus) { %>
-          <a class="btn status-btn" href="/confirm-status/<%= order.id %>/<%= encodeURIComponent(order.nextStatus) %>" onclick="this.style.pointerEvents='none'; this.innerText='Loading...'; this.style.opacity='0.7';">
-            <%= order.statusActionLabel %>
-          </a>
-        <% } %>
-
+      <div class="address-box">
+        <div class="address-label">📍 Shipping Address</div>
+        <div class="address-text"><%= order.shippingAddress || 'No address available' %></div>
+      </div>
     </div>
 
-  <% }) %>
+    <div class="card-footer">
+      <a class="btn btn-view" href="/order/<%= order.id %>">View Packing</a>
+      <% if (order.nextStatus) { %>
+        <a class="btn <%= btnClass %>"
+           href="/confirm-status/<%= order.id %>/<%= encodeURIComponent(order.nextStatus) %>"
+           onclick="this.style.pointerEvents='none';this.textContent='Loading…';this.style.opacity='0.65';">
+          <%= order.statusActionLabel %>
+        </a>
+      <% } %>
+    </div>
+  </div>
+  <% }); %>
+</main>
 
-</div>
+<script>
+  function setIcon() {
+    var dark = document.documentElement.getAttribute('data-theme') === 'dark';
+    document.getElementById('themeBtn').textContent = dark ? '☀️' : '🌙';
+  }
+  function toggleTheme() {
+    var dark = document.documentElement.getAttribute('data-theme') === 'dark';
+    var next = dark ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    localStorage.setItem('theme', next);
+    setIcon();
+  }
+  setIcon();
 
-<style>
-.btn-create-shipment-circle {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  width: 100px;
-  height: 100px;
-  border-radius: 20px;
-  background: #34c759;
-  color: white;
-  text-decoration: none;
-  font-weight: bold;
-  font-size: 14px;
-  box-shadow: 0 4px 10px rgba(52,199,89,0.4);
-  transition: transform 0.2s;
-  line-height: 1.4;
-}
-.btn-create-shipment-circle:hover {
-  transform: scale(1.05);
-  background: #2dae4c;
-}
-</style>
+  // Strip success/updated query params so refresh doesn't re-show the toast
+  if (window.location.search) {
+    history.replaceState(null, '', window.location.pathname);
+  }
+
+  setTimeout(function(){ location.reload(); }, 30000);
+</script>
 
 </body>
 </html>

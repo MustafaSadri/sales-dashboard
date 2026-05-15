@@ -104,6 +104,29 @@ function wait(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+const MAX_CONCURRENT = 3;
+let activeRequests = 0;
+const requestQueue = [];
+
+function acquireSlot() {
+  return new Promise(resolve => {
+    if (activeRequests < MAX_CONCURRENT) {
+      activeRequests++;
+      resolve();
+    } else {
+      requestQueue.push(resolve);
+    }
+  });
+}
+
+function releaseSlot() {
+  if (requestQueue.length > 0) {
+    requestQueue.shift()();
+  } else {
+    activeRequests--;
+  }
+}
+
 function shouldRetry(err) {
   const status = err.response?.status;
 
@@ -123,6 +146,7 @@ function logApiError(err, url) {
 }
 
 async function apiRequestWithRetry(method, url, options = {}, retries = 2) {
+  await acquireSlot();
   try {
     return await api.request({
       method,
@@ -143,6 +167,8 @@ async function apiRequestWithRetry(method, url, options = {}, retries = 2) {
     }
 
     throw err;
+  } finally {
+    releaseSlot();
   }
 }
 
