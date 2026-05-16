@@ -2,6 +2,12 @@ const express = require("express");
 const axios = require("axios");
 const fs = require("fs");
 const path = require("path");
+const multer = require("multer");
+
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024, files: 5 }
+});
 
 const app = express();
 
@@ -59,7 +65,7 @@ let demandStatesCache = {
 
 const api = axios.create({
   baseURL: API_BASE,
-  timeout: 15000
+  timeout: 25000
 });
 
 app.use(express.urlencoded({ extended: false }));
@@ -128,12 +134,9 @@ function releaseSlot() {
 }
 
 function shouldRetry(err) {
+  if (err.code === "ECONNABORTED") return false;
   const status = err.response?.status;
-
-  if (!status) {
-    return true;
-  }
-
+  if (!status) return true;
   return status === 429 || status >= 500;
 }
 
@@ -184,6 +187,20 @@ async function postWithRetry(url, data, options = {}, retries = 2) {
   return apiRequestWithRetry("post", url, { ...options, data }, retries);
 }
 
+async function attachFilesToOrder(orderId, files) {
+  if (!files || files.length === 0) return;
+  const payload = files.map(f => ({
+    filename: f.originalname,
+    content: f.buffer.toString("base64")
+  }));
+  try {
+    await postWithRetry(`/entity/customerorder/${orderId}/files`, payload);
+    console.log(`Attached ${files.length} file(s) to order ${orderId}`);
+  } catch (err) {
+    console.log("File attachment failed (non-fatal):", err.response?.data || err.message);
+  }
+}
+
 function isWantedOrder(order) {
   if (order.store?.name !== WAREHOUSE_NAME) {
     return false;
@@ -222,6 +239,26 @@ function clearOrdersCache() {
     staleUntil: 0,
     data: []
   };
+}
+
+function optimisticStatusUpdate(orderId, newStatus) {
+  if (!ordersCache.data.length) return;
+  if (!ALLOWED_STATUSES.has(newStatus)) {
+    // e.g. DISPATCHED — remove from board immediately
+    ordersCache.data = ordersCache.data.filter(o => o.id !== orderId);
+  } else {
+    const order = ordersCache.data.find(o => o.id === orderId);
+    if (order) {
+      order.status = newStatus;
+      order.nextStatus = getNextStatus(newStatus);
+      order.statusActionLabel = getStatusActionLabel(newStatus);
+    }
+  }
+  // Keep cache alive 20 s so page reads optimistic data;
+  // after that the 30-s auto-refresh pulls real data from MoySklad
+  const now = Date.now();
+  ordersCache.expiresAt = now + 20000;
+  ordersCache.staleUntil = now + 20000;
 }
 
 function setFastPageCache(res) {
@@ -470,24 +507,17 @@ function isValidStatusPasscode(passcode) {
   return String(passcode || "") === STATUS_PASSCODE;
 }
 
-async function updateOrderStatus(orderId, wantedStatus) {
-  const [order, selectedState] = await Promise.all([
-    getFreshOrderForStatusChange(orderId),
-    getMoyskladStateByName(wantedStatus)
-  ]);
-
-  assertAllowedStatusChange(order, wantedStatus);
+async function updateOrderStatus(orderId, wantedStatus, attachments = {}) {
+  const selectedState = await getMoyskladStateByName(wantedStatus);
 
   await putWithRetry(`/entity/customerorder/${orderId}`, {
-    state: {
-      meta: selectedState.meta
-    }
+    state: { meta: selectedState.meta }
   });
 
   if (wantedStatus === "DISPATCHED") {
     const fullOrder = await getFullOrderForShipment(orderId);
     const hasDemand = fullOrder.demands && fullOrder.demands.length > 0;
-    
+
     if (!hasDemand) {
       const shipmentState = await getDemandStateByName(SHIPMENT_STATUS_NAME);
 
@@ -503,17 +533,20 @@ async function updateOrderStatus(orderId, wantedStatus) {
 
       if (!shipmentPayload.state) delete shipmentPayload.state;
 
+      if (attachments.trackingNumber) {
+        shipmentPayload.description = `Tracking: ${attachments.trackingNumber}`;
+      }
+
       const demandRes = await postWithRetry("/entity/demand", shipmentPayload);
       saveShipmentStatus(orderId, demandRes.data);
+
+      if (attachments.files && attachments.files.length > 0) {
+        await attachFilesToOrder(orderId, attachments.files);
+      }
     }
   }
 
   clearOrdersCache();
-
-  return {
-    order,
-    status: selectedState.name
-  };
 }
 
 async function refreshOrders(options = {}) {
@@ -671,11 +704,9 @@ app.get("/", async (req, res) => {
       return res.render("orders", { orders: [] });
     }
 
-    const orders = req.query.updated
-      ? await refreshOrders({ forceShipmentRefresh: true })
-      : await loadOrders();
+    const orders = await loadOrders();
 
-    if (req.query.updated || req.query.success) {
+    if (req.query.success) {
       setNoStore(res);
     } else {
       setFastPageCache(res);
@@ -693,91 +724,69 @@ app.get("/", async (req, res) => {
   }
 });
 
-app.get("/confirm-status/:id/:status", async (req, res) => {
-  try {
-    if (!TOKEN) {
-      console.log("Missing TOKEN environment variable");
-      return res.send("Status update is not available");
-    }
+app.get("/confirm-status/:id/:status", (req, res) => {
+  if (!TOKEN) return res.send("Status update is not available");
 
-    const orderId = req.params.id;
-    const wantedStatus = decodeURIComponent(req.params.status);
-    const order = await getFreshOrderForStatusChange(orderId);
+  const orderId = req.params.id;
+  const wantedStatus = decodeURIComponent(req.params.status);
 
-    try {
-      assertAllowedStatusChange(order, wantedStatus);
-    } catch (err) {
-      return res.redirect("/?updated=1");
-    }
+  // Use cached order — avoids a round-trip to MoySklad
+  const order = findCachedOrder(orderId);
+  if (!order) return res.redirect("/");
 
+  setNoStore(res);
+  res.render("confirm-status", {
+    order,
+    wantedStatus,
+    actionLabel: STATUS_ACTION_LABELS[wantedStatus] || wantedStatus,
+    passcodeError: null,
+    statusError: null
+  });
+});
+
+app.post("/update-status/:id/:status", upload.array("attachments", 5), async (req, res) => {
+  if (!TOKEN) {
+    console.log("Missing TOKEN environment variable");
+    return res.send("Failed to update status");
+  }
+
+  const orderId = req.params.id;
+  const wantedStatus = decodeURIComponent(req.params.status);
+  const passcode = req.body.passcode;
+
+  const isModal = req.headers["x-modal"] === "1";
+
+  if (!isValidStatusPasscode(passcode)) {
+    if (isModal) return res.status(403).json({ error: "Wrong passcode" });
+    const order = findCachedOrder(orderId) || await getFreshOrderForStatusChange(orderId);
     setNoStore(res);
-    res.render("confirm-status", {
+    return res.status(403).render("confirm-status", {
       order,
       wantedStatus,
       actionLabel: STATUS_ACTION_LABELS[wantedStatus] || wantedStatus,
-      passcodeError: null,
+      passcodeError: "Wrong passcode",
       statusError: null
     });
-  } catch (err) {
-    console.log("Status confirmation error:", err.response?.status || err.message);
-    res.send("Cannot update this status");
   }
-});
 
-app.post("/update-status/:id/:status", async (req, res) => {
-  try {
-    if (!TOKEN) {
-      console.log("Missing TOKEN environment variable");
-      return res.send("Failed to update status");
-    }
+  const attachments = {
+    trackingNumber: (req.body.trackingNumber || "").trim(),
+    files: req.files || []
+  };
 
-    const orderId = req.params.id;
-    const wantedStatus = decodeURIComponent(req.params.status);
-    const passcode = req.body.passcode;
+  optimisticStatusUpdate(orderId, wantedStatus);
+  setNoStore(res);
 
-    if (!isValidStatusPasscode(passcode)) {
-      const order = await getFreshOrderForStatusChange(orderId);
-
-      try {
-        assertAllowedStatusChange(order, wantedStatus);
-      } catch (err) {
-        return res.redirect("/?updated=1");
-      }
-
-      setNoStore(res);
-      return res.status(403).render("confirm-status", {
-        order,
-        wantedStatus,
-        actionLabel: STATUS_ACTION_LABELS[wantedStatus] || wantedStatus,
-        passcodeError: "Wrong passcode",
-        statusError: null
-      });
-    }
-
-    await updateOrderStatus(orderId, wantedStatus);
-    setNoStore(res);
-    res.redirect(wantedStatus === "DISPATCHED" ? "/?success=dispatch" : "/?updated=1");
-  } catch (err) {
-    console.log("STATUS UPDATE ERROR:", err.response?.data || err.message);
-
-    try {
-      const orderId = req.params.id;
-      const wantedStatus = decodeURIComponent(req.params.status);
-      const order = await getFreshOrderForStatusChange(orderId);
-
-      setNoStore(res);
-      return res.status(400).render("confirm-status", {
-        order,
-        wantedStatus,
-        actionLabel: STATUS_ACTION_LABELS[wantedStatus] || wantedStatus,
-        passcodeError: null,
-        statusError: err.message || "Failed to update status"
-      });
-    } catch (renderErr) {
-      console.log("STATUS ERROR RENDER FAILED:", renderErr.response?.data || renderErr.message);
-      res.send("Failed to update status");
-    }
+  if (isModal) {
+    res.json({ ok: true });
+  } else {
+    res.redirect(wantedStatus === "DISPATCHED" ? "/?success=dispatch" : "/");
   }
+
+  // Finish MoySklad API work in the background
+  updateOrderStatus(orderId, wantedStatus, attachments).catch(err => {
+    console.log("Background status update failed:", err.response?.data || err.message);
+  });
 });
 
 
@@ -873,4 +882,9 @@ const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
+  // Pre-warm caches so first status change is instant
+  if (TOKEN) {
+    getStates().catch(() => {});
+    getDemandStates().catch(() => {});
+  }
 });

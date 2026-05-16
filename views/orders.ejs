@@ -8,208 +8,253 @@
     :root {
       --bg: #f0f4f8;
       --surface: #ffffff;
-      --surface2: #f8fafc;
+      --surface2: #f4f6f9;
       --text: #111827;
       --text-muted: #6b7280;
-      --border: #e5e7eb;
-      --topbar: rgba(255,255,255,0.9);
+      --border: #e2e8f0;
+      --topbar: rgba(255,255,255,0.94);
       --accent: #4f46e5;
+      --col-bg: #f8fafc;
       --new:      #f59e0b;
       --accepted: #10b981;
       --ready:    #6366f1;
-      --shadow: 0 1px 4px rgba(0,0,0,0.07);
     }
     [data-theme="dark"] {
       --bg: #0d1117;
       --surface: #161b22;
-      --surface2: #21262d;
+      --surface2: #1c2128;
       --text: #e6edf3;
       --text-muted: #8b949e;
       --border: #30363d;
-      --topbar: rgba(22,27,34,0.94);
-      --shadow: 0 1px 4px rgba(0,0,0,0.4);
+      --topbar: rgba(13,17,23,0.96);
+      --col-bg: #13181f;
     }
 
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; overflow: hidden; }
     body {
       font-family: -apple-system, 'Segoe UI', BlinkMacSystemFont, Arial, sans-serif;
-      background: var(--bg); color: var(--text);
-      min-height: 100vh; font-size: 14px;
-      transition: background 0.25s, color 0.25s;
+      background: var(--bg); color: var(--text); font-size: 13px;
+      transition: background 0.2s, color 0.2s;
     }
 
     /* ── TOPBAR ── */
     .topbar {
-      position: sticky; top: 0; z-index: 100;
+      height: 48px; display: flex; align-items: center; padding: 0 12px;
       background: var(--topbar);
-      backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+      backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
       border-bottom: 1px solid var(--border);
-      height: 52px; display: flex; align-items: center; padding: 0 16px;
+      position: relative; z-index: 10; flex-shrink: 0;
     }
-    .topbar-inner {
-      width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 12px;
-    }
-    .brand { font-size: 15px; font-weight: 700; letter-spacing: -0.3px; display: flex; align-items: center; gap: 7px; }
-    .brand-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); flex-shrink: 0; }
+    .topbar-inner { width: 100%; display: flex; align-items: center; gap: 10px; }
+    .brand { font-size: 14px; font-weight: 700; display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+    .brand-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); }
 
-    /* Status summary pills in topbar */
-    .status-summary { display: flex; align-items: center; gap: 6px; flex: 1; justify-content: center; }
-    .s-pill {
-      display: flex; align-items: center; gap: 5px;
-      padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 700;
-      border: 1.5px solid transparent;
-    }
-    .s-pill-new      { background: rgba(245,158,11,0.12); color: #b45309; border-color: rgba(245,158,11,0.3); }
-    .s-pill-accepted { background: rgba(16,185,129,0.12); color: #065f46; border-color: rgba(16,185,129,0.3); }
-    .s-pill-ready    { background: rgba(99,102,241,0.12); color: #4338ca; border-color: rgba(99,102,241,0.3); }
+    .status-pills { display: flex; align-items: center; gap: 5px; flex: 1; justify-content: center; }
+    .s-pill { display: inline-flex; align-items: center; gap: 4px; padding: 3px 9px; border-radius: 20px; font-size: 11px; font-weight: 700; border: 1.5px solid transparent; }
+    .s-pill-new      { background: rgba(245,158,11,0.1); color: #b45309; border-color: rgba(245,158,11,0.35); }
+    .s-pill-accepted { background: rgba(16,185,129,0.1); color: #065f46; border-color: rgba(16,185,129,0.35); }
+    .s-pill-ready    { background: rgba(99,102,241,0.1); color: #4338ca; border-color: rgba(99,102,241,0.35); }
     [data-theme="dark"] .s-pill-new      { color: #fcd34d; }
     [data-theme="dark"] .s-pill-accepted { color: #6ee7b7; }
     [data-theme="dark"] .s-pill-ready    { color: #c4b5fd; }
-    .s-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
-    .s-dot-new      { background: var(--new); }
+    .s-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+    .s-dot-new { background: var(--new); }
     .s-dot-accepted { background: var(--accepted); }
-    .s-dot-ready    { background: var(--ready); }
+    .s-dot-ready { background: var(--ready); }
 
-    .topbar-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
-    .nav-link {
-      font-size: 12px; font-weight: 600; color: var(--accent);
-      text-decoration: none; padding: 5px 10px; border-radius: 7px;
-      background: rgba(79,70,229,0.08); transition: background 0.2s; white-space: nowrap;
-    }
+    .topbar-right { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+    .nav-link { font-size: 12px; font-weight: 600; color: var(--accent); text-decoration: none; padding: 5px 10px; border-radius: 7px; background: rgba(79,70,229,0.08); transition: background 0.2s; }
     .nav-link:hover { background: rgba(79,70,229,0.16); }
-    .theme-btn {
-      width: 34px; height: 34px; border-radius: 9px; border: 1px solid var(--border);
-      background: var(--surface); color: var(--text); font-size: 15px; cursor: pointer;
-      display: flex; align-items: center; justify-content: center; transition: background 0.2s;
-    }
+    .theme-btn { width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text); font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.2s; }
     .theme-btn:hover { background: var(--surface2); }
 
-    /* ── MAIN ── */
-    .main { padding: 14px 12px 40px; }
-
-    /* ── STATUS GROUP ── */
-    .group { margin-bottom: 18px; }
-
-    .group-header {
-      display: flex; align-items: center; gap: 8px;
-      padding: 0 4px 8px;
+    /* ── KANBAN BOARD ── */
+    .board {
+      display: flex;
+      gap: 0;
+      height: calc(100vh - 48px);
+      overflow: hidden;
     }
-    .group-stripe {
-      width: 4px; height: 20px; border-radius: 3px; flex-shrink: 0;
+
+    /* ── EACH COLUMN ── */
+    .col {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      border-right: 1px solid var(--border);
+      background: var(--col-bg);
+      overflow: hidden;
     }
+    .col:last-child { border-right: none; }
+
+    /* Column header — looks like Excel column header */
+    .col-head {
+      flex-shrink: 0;
+      padding: 0;
+      border-bottom: 3px solid transparent;
+      background: var(--surface);
+    }
+    .col-head-new      { border-bottom-color: var(--new); }
+    .col-head-accepted { border-bottom-color: var(--accepted); }
+    .col-head-ready    { border-bottom-color: var(--ready); }
+
+    .col-head-inner {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 10px 12px;
+    }
+    .col-title {
+      font-size: 11px; font-weight: 800; text-transform: uppercase;
+      letter-spacing: 0.8px; display: flex; align-items: center; gap: 7px;
+    }
+    .col-stripe { width: 3px; height: 14px; border-radius: 2px; flex-shrink: 0; }
     .stripe-new      { background: var(--new); }
     .stripe-accepted { background: var(--accepted); }
     .stripe-ready    { background: var(--ready); }
-    .group-title {
-      font-size: 12px; font-weight: 800; text-transform: uppercase;
-      letter-spacing: 0.8px; color: var(--text-muted);
-    }
-    .group-badge {
+    .col-count {
       font-size: 11px; font-weight: 700; padding: 2px 7px;
-      border-radius: 10px; color: #fff;
+      border-radius: 10px; color: #fff; flex-shrink: 0;
     }
-    .badge-new      { background: var(--new); }
-    .badge-accepted { background: var(--accepted); }
-    .badge-ready    { background: var(--ready); }
-    .group-line { flex: 1; height: 1px; background: var(--border); }
+    .count-new      { background: var(--new); }
+    .count-accepted { background: var(--accepted); }
+    .count-ready    { background: var(--ready); }
 
-    /* ── TABLE ── */
-    .order-table {
-      width: 100%; border-collapse: collapse;
-      background: var(--surface); border-radius: 12px;
-      overflow: hidden; box-shadow: var(--shadow);
+    /* Column total qty label */
+    .col-total { font-size: 10px; color: var(--text-muted); padding: 3px 12px 7px; border-bottom: 1px solid var(--border); }
+
+    /* Column body — scrollable */
+    .col-body { flex: 1; overflow-y: auto; padding: 8px; }
+    .col-body::-webkit-scrollbar { width: 4px; }
+    .col-body::-webkit-scrollbar-track { background: transparent; }
+    .col-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+    /* Empty column state */
+    .col-empty {
+      display: flex; flex-direction: column; align-items: center;
+      justify-content: center; height: 100%;
+      color: var(--text-muted); font-size: 12px; gap: 8px;
+    }
+    .col-empty-icon { font-size: 28px; opacity: 0.4; }
+
+    /* ── ORDER CARD ── */
+    .order-card {
+      background: var(--surface);
       border: 1px solid var(--border);
+      border-radius: 10px;
+      margin-bottom: 8px;
+      overflow: hidden;
+      transition: box-shadow 0.15s, transform 0.15s;
     }
-    .order-table thead tr {
-      background: var(--surface2); border-bottom: 1.5px solid var(--border);
+    .order-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.1); transform: translateY(-1px); }
+    .order-card:last-child { margin-bottom: 0; }
+
+    .card-top { padding: 10px 11px 8px; }
+
+    /* Order name row */
+    .card-name-row {
+      display: flex; align-items: flex-start;
+      justify-content: space-between; gap: 8px; margin-bottom: 4px;
     }
-    .order-table thead th {
-      padding: 8px 12px; text-align: left;
-      font-size: 10px; font-weight: 700;
-      text-transform: uppercase; letter-spacing: 0.6px; color: var(--text-muted);
+    .card-name { font-size: 14px; font-weight: 700; letter-spacing: -0.2px; }
+    .card-qty {
+      text-align: right; flex-shrink: 0;
+      font-size: 15px; font-weight: 800; line-height: 1.1;
     }
-    .order-table thead th.th-center { text-align: center; }
-    .order-table thead th.th-right  { text-align: right; }
+    .card-qty-unit { font-size: 9px; color: var(--text-muted); font-weight: 500; }
 
-    .order-table tbody tr {
-      border-bottom: 1px solid var(--border);
-      transition: background 0.15s;
-    }
-    .order-table tbody tr:last-child { border-bottom: none; }
-    .order-table tbody tr:hover { background: var(--surface2); }
+    .card-date { font-size: 10px; color: var(--text-muted); margin-bottom: 5px; }
 
-    .order-table td { padding: 10px 12px; vertical-align: middle; }
+    .card-customer { font-size: 12px; font-weight: 600; margin-bottom: 3px; }
 
-    /* Col: order id */
-    .td-id { width: 100px; }
-    .order-id { font-size: 14px; font-weight: 700; letter-spacing: -0.2px; }
-    .order-date { font-size: 10px; color: var(--text-muted); margin-top: 1px; }
-
-    /* Col: customer */
-    .td-customer { min-width: 140px; }
-    .customer-name { font-size: 13px; font-weight: 600; }
-    .customer-addr {
-      font-size: 11px; color: var(--text-muted); margin-top: 2px;
-      max-width: 240px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    .card-addr {
+      font-size: 10px; color: var(--text-muted);
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     }
 
-    /* Col: qty */
-    .td-qty { width: 72px; text-align: center; }
-    .qty-val { font-size: 15px; font-weight: 700; }
-    .qty-unit { font-size: 10px; color: var(--text-muted); }
-
-    /* Col: actions */
-    .td-actions { width: 180px; text-align: right; }
-    .action-btns { display: flex; gap: 6px; justify-content: flex-end; align-items: center; }
-
+    /* Card footer — action buttons */
+    .card-foot {
+      display: flex; gap: 5px; padding: 7px 11px;
+      background: var(--surface2); border-top: 1px solid var(--border);
+    }
     .btn {
-      display: inline-flex; align-items: center; gap: 4px;
-      padding: 7px 12px; border-radius: 8px;
-      font-size: 12px; font-weight: 700;
+      flex: 1; text-align: center; padding: 6px 4px;
+      border-radius: 7px; font-size: 11px; font-weight: 700;
       text-decoration: none; border: none; cursor: pointer;
-      font-family: inherit; transition: opacity 0.18s, transform 0.1s;
-      white-space: nowrap;
+      font-family: inherit; white-space: nowrap;
+      transition: opacity 0.15s, transform 0.1s;
     }
-    .btn:active { transform: scale(0.96); }
-    .btn-pack {
-      background: var(--surface2); color: var(--text);
-      border: 1.5px solid var(--border);
-    }
+    .btn:active { transform: scale(0.95); }
+    .btn-pack     { background: var(--surface); color: var(--text); border: 1.5px solid var(--border); }
     .btn-pack:hover { background: var(--border); }
-    .btn-accept   { background: var(--new);      color: #fff; }
+    .btn-new      { background: var(--new);      color: #fff; }
+    .btn-accepted { background: var(--accepted); color: #fff; }
     .btn-ready    { background: var(--ready);    color: #fff; }
-    .btn-dispatch { background: var(--accepted); color: #fff; }
-    .btn-accept:hover   { opacity: 0.88; }
-    .btn-ready:hover    { opacity: 0.88; }
-    .btn-dispatch:hover { opacity: 0.88; }
-
-    /* ── EMPTY ── */
-    .empty {
-      text-align: center; padding: 60px 20px; color: var(--text-muted);
-    }
-    .empty-icon { font-size: 44px; margin-bottom: 10px; }
-    .empty h3 { font-size: 16px; font-weight: 600; color: var(--text); }
+    .btn-new:hover, .btn-accepted:hover, .btn-ready:hover { opacity: 0.85; }
 
     /* ── TOAST ── */
     .toast {
-      position: fixed; bottom: 24px; left: 50%;
-      transform: translateX(-50%);
-      background: #10b981; color: #fff;
-      padding: 11px 22px; border-radius: 11px;
-      font-size: 13px; font-weight: 600;
-      box-shadow: 0 8px 28px rgba(16,185,129,0.35);
+      position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+      background: #10b981; color: #fff; padding: 10px 20px; border-radius: 10px;
+      font-size: 13px; font-weight: 600; box-shadow: 0 6px 24px rgba(16,185,129,0.35);
       z-index: 999; transition: opacity 0.35s, transform 0.35s; white-space: nowrap;
     }
-    .toast.hide { opacity: 0; transform: translateX(-50%) translateY(14px); }
+    .toast.hide { opacity: 0; transform: translateX(-50%) translateY(12px); }
 
-    /* ── TABLET: wider layout ── */
-    @media (min-width: 700px) {
-      .main { padding: 16px 20px 40px; }
-      .td-id { width: 120px; }
-      .td-qty { width: 80px; }
-      .td-actions { width: 200px; }
-      .customer-addr { max-width: 320px; }
+    /* ── INLINE MODAL ── */
+    .modal-bg {
+      position: fixed; inset: 0; z-index: 200;
+      background: rgba(0,0,0,0.45);
+      display: flex; align-items: center; justify-content: center;
+      backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px);
+      animation: mfadein 0.15s ease;
     }
+    @keyframes mfadein { from { opacity:0 } to { opacity:1 } }
+    .modal {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 16px; padding: 22px 20px 18px;
+      width: min(340px, 92vw);
+      box-shadow: 0 24px 64px rgba(0,0,0,0.28);
+      animation: mslidein 0.15s ease;
+    }
+    @keyframes mslidein { from { transform: translateY(14px); opacity:0 } to { transform:none; opacity:1 } }
+    .modal-title { font-size: 14px; font-weight: 800; margin-bottom: 16px; letter-spacing: -0.2px; }
+    .modal-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; color: var(--text-muted); margin-bottom: 6px; display: block; }
+    .modal-passcode {
+      width: 100%; padding: 11px 14px;
+      border: 1.5px solid var(--border); border-radius: 10px;
+      background: var(--surface2); color: var(--text);
+      font-size: 22px; letter-spacing: 8px; text-align: center;
+      outline: none; font-family: inherit;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .modal-passcode:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(79,70,229,0.12); background: var(--surface); }
+    .modal-tracking {
+      width: 100%; padding: 9px 12px; margin-bottom: 10px;
+      border: 1.5px solid var(--border); border-radius: 10px;
+      background: var(--surface2); color: var(--text);
+      font-family: inherit; font-size: 13px; outline: none;
+      transition: border-color 0.2s;
+    }
+    .modal-tracking:focus { border-color: var(--accent); background: var(--surface); }
+    .modal-tracking::placeholder { color: var(--text-muted); }
+    .modal-file-zone {
+      border: 2px dashed var(--border); border-radius: 10px;
+      padding: 10px; text-align: center; cursor: pointer;
+      position: relative; font-size: 12px; color: var(--text-muted); margin-bottom: 6px;
+      transition: border-color 0.2s;
+    }
+    .modal-file-zone:hover { border-color: var(--accent); }
+    .modal-file-zone input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+    .modal-file-list { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; }
+    .modal-file-item { display: flex; align-items: center; gap: 6px; padding: 4px 8px; background: var(--surface2); border-radius: 6px; border: 1px solid var(--border); font-size: 11px; }
+    .modal-file-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .modal-file-rm { border: none; background: none; color: var(--text-muted); cursor: pointer; font-size: 13px; padding: 0 2px; }
+    .modal-file-rm:hover { color: #dc2626; }
+    .modal-error { margin-top: 8px; padding: 8px 12px; background: #fee2e2; color: #991b1b; border-radius: 8px; font-size: 12px; font-weight: 600; }
+    [data-theme="dark"] .modal-error { background: #3a0a0a; color: #fca5a5; }
+    .modal-actions { display: flex; gap: 8px; margin-top: 14px; }
+    .modal-dispatch { margin-bottom: 14px; }
   </style>
 </head>
 <body>
@@ -219,36 +264,23 @@
   var acceptedOrders = orders.filter(function(o){ return o.status === 'ACCEPTED'; });
   var readyOrders    = orders.filter(function(o){ return o.status === 'READY TO DISPATCH'; });
 
-  function fmtDate(dateStr) {
-    var d = new Date(dateStr);
-    return String(d.getDate()).padStart(2,'0') + '.' +
-           String(d.getMonth()+1).padStart(2,'0') + '.' +
-           d.getFullYear();
+  function fmtDate(ds) {
+    var d = new Date(ds);
+    return String(d.getDate()).padStart(2,'0') + '.' + String(d.getMonth()+1).padStart(2,'0') + '.' + d.getFullYear();
+  }
+  function totalQty(list) {
+    return list.reduce(function(s, o){ return s + (o.totalQty || 0); }, 0);
   }
 %>
 
 <header class="topbar">
   <div class="topbar-inner">
     <div class="brand"><span class="brand-dot"></span>Dashboard</div>
-
-    <div class="status-summary">
-      <% if (newOrders.length > 0) { %>
-      <div class="s-pill s-pill-new">
-        <span class="s-dot s-dot-new"></span>NEW <%= newOrders.length %>
-      </div>
-      <% } %>
-      <% if (acceptedOrders.length > 0) { %>
-      <div class="s-pill s-pill-accepted">
-        <span class="s-dot s-dot-accepted"></span>ACCEPTED <%= acceptedOrders.length %>
-      </div>
-      <% } %>
-      <% if (readyOrders.length > 0) { %>
-      <div class="s-pill s-pill-ready">
-        <span class="s-dot s-dot-ready"></span>READY <%= readyOrders.length %>
-      </div>
-      <% } %>
+    <div class="status-pills">
+      <% if (newOrders.length)      { %><div class="s-pill s-pill-new">     <span class="s-dot s-dot-new"></span>     NEW <%= newOrders.length %>      </div><% } %>
+      <% if (acceptedOrders.length) { %><div class="s-pill s-pill-accepted"><span class="s-dot s-dot-accepted"></span> ACCEPTED <%= acceptedOrders.length %></div><% } %>
+      <% if (readyOrders.length)    { %><div class="s-pill s-pill-ready">   <span class="s-dot s-dot-ready"></span>   READY <%= readyOrders.length %>    </div><% } %>
     </div>
-
     <div class="topbar-right">
       <a href="/transfers" class="nav-link">⇆ Transfers</a>
       <button class="theme-btn" id="themeBtn" onclick="toggleTheme()"></button>
@@ -256,109 +288,237 @@
   </div>
 </header>
 
-<main class="main">
+<% if (typeof successMessage !== 'undefined' && successMessage) { %>
+  <div class="toast" id="toast"><%= successMessage %></div>
+  <script>setTimeout(function(){var t=document.getElementById('toast');if(t){t.classList.add('hide');setTimeout(function(){t.remove();},350);}},4000);</script>
+<% } %>
 
-  <% if (typeof successMessage !== 'undefined' && successMessage) { %>
-    <div class="toast" id="toast"><%= successMessage %></div>
-    <script>
-      setTimeout(function(){
-        var t = document.getElementById('toast');
-        if(t){ t.classList.add('hide'); setTimeout(function(){ t.remove(); }, 350); }
-      }, 4000);
-    </script>
-  <% } %>
-
-  <% if (orders.length === 0) { %>
-    <div class="empty">
-      <div class="empty-icon">📭</div>
-      <h3>No active orders</h3>
-      <p style="margin-top:5px;font-size:13px;">All orders are up to date.</p>
-    </div>
-  <% } %>
+<div class="board">
 
   <%
-    var groups = [
-      { list: newOrders,      label: 'New',              stripe: 'stripe-new',      badge: 'badge-new',      btnClass: 'btn-accept'   },
-      { list: acceptedOrders, label: 'Accepted',         stripe: 'stripe-accepted', badge: 'badge-accepted', btnClass: 'btn-ready'    },
-      { list: readyOrders,    label: 'Ready to Dispatch',stripe: 'stripe-ready',    badge: 'badge-ready',    btnClass: 'btn-dispatch' }
+    var cols = [
+      {
+        list: newOrders,
+        label: 'New',
+        headCls: 'col-head-new',
+        stripeCls: 'stripe-new',
+        countCls: 'count-new',
+        btnCls: 'btn-new',
+        btnLabel: '→ Accept'
+      },
+      {
+        list: acceptedOrders,
+        label: 'Accepted',
+        headCls: 'col-head-accepted',
+        stripeCls: 'stripe-accepted',
+        countCls: 'count-accepted',
+        btnCls: 'btn-accepted',
+        btnLabel: '→ Ready to Dispatch'
+      },
+      {
+        list: readyOrders,
+        label: 'Ready to Dispatch',
+        headCls: 'col-head-ready',
+        stripeCls: 'stripe-ready',
+        countCls: 'count-ready',
+        btnCls: 'btn-ready',
+        btnLabel: '🚚 Dispatch & Create Shipment'
+      }
     ];
-    groups.forEach(function(group) {
-      if (group.list.length === 0) return;
+    cols.forEach(function(col) {
   %>
-  <div class="group">
-    <div class="group-header">
-      <div class="group-stripe <%= group.stripe %>"></div>
-      <span class="group-title"><%= group.label %></span>
-      <span class="group-badge <%= group.badge %>"><%= group.list.length %></span>
-      <div class="group-line"></div>
-    </div>
 
-    <table class="order-table">
-      <thead>
-        <tr>
-          <th>Order</th>
-          <th>Customer</th>
-          <th class="th-center">Qty</th>
-          <th class="th-right">Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        <% group.list.forEach(function(order) { %>
-        <tr>
-          <td class="td-id">
-            <div class="order-id"><%= order.name %></div>
-            <div class="order-date"><%= fmtDate(order.date) %></div>
-          </td>
-          <td class="td-customer">
-            <div class="customer-name"><%= order.counterparty || '—' %></div>
-            <% if (order.shippingAddress) { %>
-            <div class="customer-addr">📍 <%= order.shippingAddress.replace(/\n/g,' ') %></div>
-            <% } %>
-          </td>
-          <td class="td-qty">
-            <div class="qty-val"><%= order.totalQty %></div>
-            <div class="qty-unit">pcs</div>
-          </td>
-          <td class="td-actions">
-            <div class="action-btns">
-              <a class="btn btn-pack" href="/order/<%= order.id %>">📦 Pack</a>
-              <% if (order.nextStatus) { %>
-              <a class="btn <%= group.btnClass %>"
-                 href="/confirm-status/<%= order.id %>/<%= encodeURIComponent(order.nextStatus) %>"
-                 onclick="this.style.pointerEvents='none';this.style.opacity='0.55';">
-                <%= order.statusActionLabel %>
-              </a>
-              <% } %>
+  <div class="col">
+
+    <!-- Column header (like Excel column header) -->
+    <div class="col-head <%= col.headCls %>">
+      <div class="col-head-inner">
+        <div class="col-title">
+          <div class="col-stripe <%= col.stripeCls %>"></div>
+          <%= col.label %>
+        </div>
+        <span class="col-count <%= col.countCls %>"><%= col.list.length %></span>
+      </div>
+    </div>
+    <div class="col-total">Total: <%= totalQty(col.list).toLocaleString() %> pcs</div>
+
+    <!-- Scrollable order cards -->
+    <div class="col-body">
+
+      <% if (col.list.length === 0) { %>
+        <div class="col-empty">
+          <div class="col-empty-icon">📭</div>
+          <div>No orders</div>
+        </div>
+      <% } %>
+
+      <% col.list.forEach(function(order) { %>
+      <div class="order-card">
+        <div class="card-top">
+          <div class="card-name-row">
+            <div class="card-name"><%= order.name %></div>
+            <div class="card-qty">
+              <%= order.totalQty %>
+              <div class="card-qty-unit">pcs</div>
             </div>
-          </td>
-        </tr>
-        <% }); %>
-      </tbody>
-    </table>
+          </div>
+          <div class="card-date"><%= fmtDate(order.date) %></div>
+          <div class="card-customer"><%= order.counterparty || '—' %></div>
+          <% if (order.shippingAddress) { %>
+          <div class="card-addr">📍 <%= order.shippingAddress.replace(/\n/g,' ') %></div>
+          <% } %>
+        </div>
+        <div class="card-foot">
+          <a class="btn btn-pack" href="/order/<%= order.id %>">📦 Pack</a>
+          <% if (order.nextStatus) { %>
+          <button class="btn <%= col.btnCls %>"
+            onclick="openModal('<%= order.id %>','<%= order.nextStatus %>','<%= col.btnLabel %>')">
+            <%= col.btnLabel %>
+          </button>
+          <% } %>
+        </div>
+      </div>
+      <% }); %>
+
+    </div>
   </div>
+
   <% }); %>
 
-</main>
+</div>
+
+<!-- ── PASSCODE MODAL ── -->
+<div class="modal-bg" id="modalBg" style="display:none" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <div class="modal-title" id="modalTitle">Confirm</div>
+
+    <div class="modal-dispatch" id="modalDispatch" style="display:none">
+      <label class="modal-label">Tracking Number (optional)</label>
+      <input class="modal-tracking" id="modalTracking" type="text" placeholder="e.g. RU123456789CN" autocomplete="off">
+      <label class="modal-label">Files (optional)</label>
+      <div class="modal-file-zone">
+        <input type="file" id="modalFileInput" multiple accept="image/*,.pdf" onchange="handleModalFiles(this.files)">
+        📁 Tap to attach files
+      </div>
+      <div class="modal-file-list" id="modalFileList"></div>
+    </div>
+
+    <label class="modal-label" for="modalPasscode">4-digit passcode</label>
+    <input class="modal-passcode" id="modalPasscode" type="password" inputmode="numeric" maxlength="4" placeholder="••••" autocomplete="off">
+    <div class="modal-error" id="modalError" style="display:none"></div>
+
+    <div class="modal-actions">
+      <button class="btn btn-pack" onclick="closeModal()" style="flex:1">Cancel</button>
+      <button class="btn" id="modalBtn" onclick="submitModal()" style="flex:2">Confirm</button>
+    </div>
+  </div>
+</div>
 
 <script>
-  function setIcon() {
-    var dark = document.documentElement.getAttribute('data-theme') === 'dark';
-    document.getElementById('themeBtn').textContent = dark ? '☀️' : '🌙';
+  /* ── THEME ── */
+  function setIcon(){
+    var dark=document.documentElement.getAttribute('data-theme')==='dark';
+    document.getElementById('themeBtn').textContent=dark?'☀️':'🌙';
   }
-  function toggleTheme() {
-    var dark = document.documentElement.getAttribute('data-theme') === 'dark';
-    var next = dark ? 'light' : 'dark';
-    document.documentElement.setAttribute('data-theme', next);
-    localStorage.setItem('theme', next);
+  function toggleTheme(){
+    var dark=document.documentElement.getAttribute('data-theme')==='dark';
+    var next=dark?'light':'dark';
+    document.documentElement.setAttribute('data-theme',next);
+    localStorage.setItem('theme',next);
     setIcon();
   }
   setIcon();
+  if(window.location.search) history.replaceState(null,'',window.location.pathname);
+  setTimeout(function(){location.reload();},30000);
 
-  if (window.location.search) {
-    history.replaceState(null, '', window.location.pathname);
+  /* ── MODAL ── */
+  var _mId='', _mStatus='', _mLabel='', _mFiles=new DataTransfer();
+
+  function openModal(id, status, label){
+    _mId=id; _mStatus=status; _mLabel=label; _mFiles=new DataTransfer();
+    document.getElementById('modalTitle').textContent=label;
+    document.getElementById('modalPasscode').value='';
+    document.getElementById('modalError').style.display='none';
+    document.getElementById('modalDispatch').style.display=status==='DISPATCHED'?'block':'none';
+    document.getElementById('modalTracking').value='';
+    document.getElementById('modalFileList').innerHTML='';
+    var btn=document.getElementById('modalBtn');
+    btn.textContent=label; btn.disabled=false;
+    btn.className='btn '+(status==='DISPATCHED'?'btn-ready':'btn-accepted');
+    document.getElementById('modalBg').style.display='flex';
+    setTimeout(function(){ document.getElementById('modalPasscode').focus(); },80);
   }
 
-  setTimeout(function(){ location.reload(); }, 30000);
+  function closeModal(){
+    document.getElementById('modalBg').style.display='none';
+  }
+
+  function handleModalFiles(files){
+    for(var i=0;i<files.length;i++) if(_mFiles.files.length<5) _mFiles.items.add(files[i]);
+    document.getElementById('modalFileInput').files=_mFiles.files;
+    renderModalFiles();
+  }
+  function removeModalFile(idx){
+    var dt=new DataTransfer();
+    for(var i=0;i<_mFiles.files.length;i++) if(i!==idx) dt.items.add(_mFiles.files[i]);
+    _mFiles=dt;
+    document.getElementById('modalFileInput').files=_mFiles.files;
+    renderModalFiles();
+  }
+  function renderModalFiles(){
+    var el=document.getElementById('modalFileList'); el.innerHTML='';
+    for(var i=0;i<_mFiles.files.length;i++){
+      (function(i,f){
+        var d=document.createElement('div'); d.className='modal-file-item';
+        d.innerHTML='<span class="modal-file-name">📎 '+f.name+'</span><button type="button" class="modal-file-rm" onclick="removeModalFile('+i+')">✕</button>';
+        el.appendChild(d);
+      })(i,_mFiles.files[i]);
+    }
+  }
+
+  async function submitModal(){
+    var pc=document.getElementById('modalPasscode').value;
+    if(pc.length<4){ document.getElementById('modalPasscode').focus(); return; }
+    var btn=document.getElementById('modalBtn');
+    btn.disabled=true; btn.textContent='…';
+    document.getElementById('modalError').style.display='none';
+
+    var fd=new FormData();
+    fd.append('passcode',pc);
+    if(_mStatus==='DISPATCHED'){
+      var tr=document.getElementById('modalTracking').value.trim();
+      if(tr) fd.append('trackingNumber',tr);
+      for(var i=0;i<_mFiles.files.length;i++) fd.append('attachments',_mFiles.files[i]);
+    }
+
+    try{
+      var res=await fetch('/update-status/'+_mId+'/'+encodeURIComponent(_mStatus),{
+        method:'POST', body:fd, headers:{'X-Modal':'1'}
+      });
+      var data=await res.json();
+      if(data.ok){
+        closeModal();
+        if(_mStatus==='DISPATCHED') location.href='/?success=dispatch';
+        else location.reload();
+      } else {
+        document.getElementById('modalError').textContent=data.error||'Something went wrong';
+        document.getElementById('modalError').style.display='block';
+        btn.disabled=false; btn.textContent=_mLabel;
+        document.getElementById('modalPasscode').value='';
+        document.getElementById('modalPasscode').focus();
+      }
+    } catch(e){
+      document.getElementById('modalError').textContent='Network error, try again';
+      document.getElementById('modalError').style.display='block';
+      btn.disabled=false; btn.textContent=_mLabel;
+    }
+  }
+
+  document.addEventListener('keydown',function(e){
+    if(document.getElementById('modalBg').style.display==='none') return;
+    if(e.key==='Enter') submitModal();
+    if(e.key==='Escape') closeModal();
+  });
 </script>
 
 </body>
