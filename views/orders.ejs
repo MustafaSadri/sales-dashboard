@@ -12,11 +12,12 @@
       --text: #111827;
       --text-muted: #6b7280;
       --border: #e5e7eb;
-      --topbar: rgba(255,255,255,0.88);
-      --card-shadow: 0 2px 12px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04);
-      --hover-shadow: 0 8px 28px rgba(0,0,0,0.1);
-      --radius: 18px;
+      --topbar: rgba(255,255,255,0.9);
       --accent: #4f46e5;
+      --new:      #f59e0b;
+      --accepted: #10b981;
+      --ready:    #6366f1;
+      --shadow: 0 1px 4px rgba(0,0,0,0.07);
     }
     [data-theme="dark"] {
       --bg: #0d1117;
@@ -25,297 +26,244 @@
       --text: #e6edf3;
       --text-muted: #8b949e;
       --border: #30363d;
-      --topbar: rgba(22,27,34,0.92);
-      --card-shadow: 0 2px 12px rgba(0,0,0,0.35), 0 1px 3px rgba(0,0,0,0.25);
-      --hover-shadow: 0 8px 28px rgba(0,0,0,0.5);
+      --topbar: rgba(22,27,34,0.94);
+      --shadow: 0 1px 4px rgba(0,0,0,0.4);
     }
 
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
     body {
       font-family: -apple-system, 'Segoe UI', BlinkMacSystemFont, Arial, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      min-height: 100vh;
+      background: var(--bg); color: var(--text);
+      min-height: 100vh; font-size: 14px;
       transition: background 0.25s, color 0.25s;
     }
 
-    /* ── TOP BAR ── */
+    /* ── TOPBAR ── */
     .topbar {
-      position: sticky;
-      top: 0;
-      z-index: 100;
+      position: sticky; top: 0; z-index: 100;
       background: var(--topbar);
-      backdrop-filter: blur(14px);
-      -webkit-backdrop-filter: blur(14px);
+      backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
       border-bottom: 1px solid var(--border);
-      padding: 0 20px;
-      height: 56px;
-      display: flex;
-      align-items: center;
+      height: 52px; display: flex; align-items: center; padding: 0 16px;
     }
     .topbar-inner {
-      width: 100%;
-      max-width: 640px;
-      margin: 0 auto;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
+      width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 12px;
     }
-    .brand {
-      font-size: 16px;
-      font-weight: 700;
-      letter-spacing: -0.4px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .brand-dot {
-      width: 8px; height: 8px;
-      border-radius: 50%;
-      background: var(--accent);
-      display: inline-block;
-    }
-    .topbar-right { display: flex; align-items: center; gap: 8px; }
+    .brand { font-size: 15px; font-weight: 700; letter-spacing: -0.3px; display: flex; align-items: center; gap: 7px; }
+    .brand-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); flex-shrink: 0; }
 
+    /* Status summary pills in topbar */
+    .status-summary { display: flex; align-items: center; gap: 6px; flex: 1; justify-content: center; }
+    .s-pill {
+      display: flex; align-items: center; gap: 5px;
+      padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 700;
+      border: 1.5px solid transparent;
+    }
+    .s-pill-new      { background: rgba(245,158,11,0.12); color: #b45309; border-color: rgba(245,158,11,0.3); }
+    .s-pill-accepted { background: rgba(16,185,129,0.12); color: #065f46; border-color: rgba(16,185,129,0.3); }
+    .s-pill-ready    { background: rgba(99,102,241,0.12); color: #4338ca; border-color: rgba(99,102,241,0.3); }
+    [data-theme="dark"] .s-pill-new      { color: #fcd34d; }
+    [data-theme="dark"] .s-pill-accepted { color: #6ee7b7; }
+    [data-theme="dark"] .s-pill-ready    { color: #c4b5fd; }
+    .s-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+    .s-dot-new      { background: var(--new); }
+    .s-dot-accepted { background: var(--accepted); }
+    .s-dot-ready    { background: var(--ready); }
+
+    .topbar-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
     .nav-link {
-      font-size: 13px;
-      font-weight: 600;
-      color: var(--accent);
-      text-decoration: none;
-      padding: 6px 12px;
-      border-radius: 8px;
-      background: rgba(79,70,229,0.08);
-      transition: background 0.2s;
+      font-size: 12px; font-weight: 600; color: var(--accent);
+      text-decoration: none; padding: 5px 10px; border-radius: 7px;
+      background: rgba(79,70,229,0.08); transition: background 0.2s; white-space: nowrap;
     }
     .nav-link:hover { background: rgba(79,70,229,0.16); }
-
     .theme-btn {
-      width: 38px; height: 38px;
-      border-radius: 10px;
-      border: 1px solid var(--border);
-      background: var(--surface);
-      color: var(--text);
-      font-size: 17px;
-      cursor: pointer;
-      display: flex; align-items: center; justify-content: center;
-      transition: background 0.2s, transform 0.15s;
+      width: 34px; height: 34px; border-radius: 9px; border: 1px solid var(--border);
+      background: var(--surface); color: var(--text); font-size: 15px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; transition: background 0.2s;
     }
-    .theme-btn:hover { background: var(--surface2); transform: scale(1.05); }
+    .theme-btn:hover { background: var(--surface2); }
 
     /* ── MAIN ── */
-    .main {
-      max-width: 640px;
-      margin: 0 auto;
-      padding: 24px 16px 60px;
-    }
+    .main { padding: 14px 12px 40px; }
 
-    .page-title {
-      font-size: 26px;
-      font-weight: 800;
-      letter-spacing: -0.6px;
-      margin-bottom: 4px;
-    }
-    .page-sub {
-      font-size: 13px;
-      color: var(--text-muted);
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-bottom: 22px;
-    }
-    .count-pill {
-      background: var(--accent);
-      color: #fff;
-      font-size: 11px;
-      font-weight: 700;
-      padding: 2px 8px;
-      border-radius: 20px;
-    }
+    /* ── STATUS GROUP ── */
+    .group { margin-bottom: 18px; }
 
-    /* ── CARD ── */
-    .card {
-      background: var(--surface);
-      border-radius: var(--radius);
+    .group-header {
+      display: flex; align-items: center; gap: 8px;
+      padding: 0 4px 8px;
+    }
+    .group-stripe {
+      width: 4px; height: 20px; border-radius: 3px; flex-shrink: 0;
+    }
+    .stripe-new      { background: var(--new); }
+    .stripe-accepted { background: var(--accepted); }
+    .stripe-ready    { background: var(--ready); }
+    .group-title {
+      font-size: 12px; font-weight: 800; text-transform: uppercase;
+      letter-spacing: 0.8px; color: var(--text-muted);
+    }
+    .group-badge {
+      font-size: 11px; font-weight: 700; padding: 2px 7px;
+      border-radius: 10px; color: #fff;
+    }
+    .badge-new      { background: var(--new); }
+    .badge-accepted { background: var(--accepted); }
+    .badge-ready    { background: var(--ready); }
+    .group-line { flex: 1; height: 1px; background: var(--border); }
+
+    /* ── TABLE ── */
+    .order-table {
+      width: 100%; border-collapse: collapse;
+      background: var(--surface); border-radius: 12px;
+      overflow: hidden; box-shadow: var(--shadow);
       border: 1px solid var(--border);
-      border-left: 4px solid var(--border);
-      margin-bottom: 16px;
-      box-shadow: var(--card-shadow);
-      transition: transform 0.18s, box-shadow 0.18s;
-      overflow: hidden;
     }
-    .card:hover { transform: translateY(-2px); box-shadow: var(--hover-shadow); }
-    .card[data-status="NEW"]              { border-left-color: #f59e0b; }
-    .card[data-status="ACCEPTED"]         { border-left-color: #10b981; }
-    .card[data-status="READY TO DISPATCH"]{ border-left-color: #6366f1; }
+    .order-table thead tr {
+      background: var(--surface2); border-bottom: 1.5px solid var(--border);
+    }
+    .order-table thead th {
+      padding: 8px 12px; text-align: left;
+      font-size: 10px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.6px; color: var(--text-muted);
+    }
+    .order-table thead th.th-center { text-align: center; }
+    .order-table thead th.th-right  { text-align: right; }
 
-    .card-body { padding: 18px 18px 14px; }
+    .order-table tbody tr {
+      border-bottom: 1px solid var(--border);
+      transition: background 0.15s;
+    }
+    .order-table tbody tr:last-child { border-bottom: none; }
+    .order-table tbody tr:hover { background: var(--surface2); }
 
-    .card-top {
-      display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
-      gap: 10px;
-      margin-bottom: 16px;
-    }
-    .order-name {
-      font-size: 17px;
-      font-weight: 700;
-      letter-spacing: -0.3px;
-      line-height: 1.2;
-    }
+    .order-table td { padding: 10px 12px; vertical-align: middle; }
 
-    /* STATUS BADGES */
-    .badge {
-      flex-shrink: 0;
-      font-size: 10px;
-      font-weight: 700;
-      padding: 4px 10px;
-      border-radius: 20px;
-      text-transform: uppercase;
-      letter-spacing: 0.6px;
-      white-space: nowrap;
-    }
-    .badge-new      { background: #fef3c7; color: #92400e; }
-    .badge-accepted { background: #d1fae5; color: #065f46; }
-    .badge-ready    { background: #ede9fe; color: #5b21b6; }
-    [data-theme="dark"] .badge-new      { background: #3a1a00; color: #fcd34d; }
-    [data-theme="dark"] .badge-accepted { background: #002e12; color: #6ee7b7; }
-    [data-theme="dark"] .badge-ready    { background: #1e0a4a; color: #c4b5fd; }
+    /* Col: order id */
+    .td-id { width: 100px; }
+    .order-id { font-size: 14px; font-weight: 700; letter-spacing: -0.2px; }
+    .order-date { font-size: 10px; color: var(--text-muted); margin-top: 1px; }
 
-    /* INFO GRID */
-    .info-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-      margin-bottom: 14px;
-    }
-    .info-label {
-      font-size: 10px;
-      font-weight: 600;
-      color: var(--text-muted);
-      text-transform: uppercase;
-      letter-spacing: 0.6px;
-      margin-bottom: 3px;
-    }
-    .info-value {
-      font-size: 14px;
-      font-weight: 600;
-      color: var(--text);
+    /* Col: customer */
+    .td-customer { min-width: 140px; }
+    .customer-name { font-size: 13px; font-weight: 600; }
+    .customer-addr {
+      font-size: 11px; color: var(--text-muted); margin-top: 2px;
+      max-width: 240px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     }
 
-    /* ADDRESS */
-    .address-box {
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 10px 12px;
-      margin-bottom: 0;
-    }
-    .address-label {
-      font-size: 10px;
-      font-weight: 600;
-      color: var(--text-muted);
-      text-transform: uppercase;
-      letter-spacing: 0.6px;
-      margin-bottom: 5px;
-    }
-    .address-text {
-      font-size: 13px;
-      color: var(--text);
-      white-space: pre-line;
-      line-height: 1.5;
-    }
+    /* Col: qty */
+    .td-qty { width: 72px; text-align: center; }
+    .qty-val { font-size: 15px; font-weight: 700; }
+    .qty-unit { font-size: 10px; color: var(--text-muted); }
 
-    /* CARD FOOTER */
-    .card-footer {
-      display: flex;
-      gap: 10px;
-      padding: 12px 18px;
-      background: var(--surface2);
-      border-top: 1px solid var(--border);
-    }
+    /* Col: actions */
+    .td-actions { width: 180px; text-align: right; }
+    .action-btns { display: flex; gap: 6px; justify-content: flex-end; align-items: center; }
+
     .btn {
-      flex: 1;
-      text-align: center;
-      padding: 11px 8px;
-      border-radius: 10px;
-      font-size: 13px;
-      font-weight: 600;
-      text-decoration: none;
-      border: none;
-      cursor: pointer;
-      transition: opacity 0.2s, transform 0.1s;
-      display: block;
-    }
-    .btn:active { transform: scale(0.97); }
-
-    .btn-view   { background: var(--surface); border: 1.5px solid var(--border); color: var(--text); }
-    .btn-view:hover { background: var(--bg); }
-    .btn-accept { background: #f59e0b; color: #fff; }
-    .btn-accept:hover { background: #d97706; }
-    .btn-ready  { background: #6366f1; color: #fff; }
-    .btn-ready:hover { background: #4f46e5; }
-    .btn-dispatch { background: #10b981; color: #fff; }
-    .btn-dispatch:hover { background: #059669; }
-
-    /* EMPTY */
-    .empty {
-      text-align: center;
-      padding: 80px 24px;
-      color: var(--text-muted);
-    }
-    .empty-icon { font-size: 52px; margin-bottom: 14px; }
-    .empty h3 { font-size: 17px; font-weight: 600; color: var(--text); margin-bottom: 6px; }
-
-    /* TOAST */
-    .toast {
-      position: fixed;
-      bottom: 28px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: #10b981;
-      color: #fff;
-      padding: 12px 24px;
-      border-radius: 12px;
-      font-size: 14px;
-      font-weight: 600;
-      box-shadow: 0 8px 30px rgba(16,185,129,0.35);
-      z-index: 999;
-      transition: opacity 0.4s, transform 0.4s;
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 7px 12px; border-radius: 8px;
+      font-size: 12px; font-weight: 700;
+      text-decoration: none; border: none; cursor: pointer;
+      font-family: inherit; transition: opacity 0.18s, transform 0.1s;
       white-space: nowrap;
     }
-    .toast.hide { opacity: 0; transform: translateX(-50%) translateY(16px); }
+    .btn:active { transform: scale(0.96); }
+    .btn-pack {
+      background: var(--surface2); color: var(--text);
+      border: 1.5px solid var(--border);
+    }
+    .btn-pack:hover { background: var(--border); }
+    .btn-accept   { background: var(--new);      color: #fff; }
+    .btn-ready    { background: var(--ready);    color: #fff; }
+    .btn-dispatch { background: var(--accepted); color: #fff; }
+    .btn-accept:hover   { opacity: 0.88; }
+    .btn-ready:hover    { opacity: 0.88; }
+    .btn-dispatch:hover { opacity: 0.88; }
+
+    /* ── EMPTY ── */
+    .empty {
+      text-align: center; padding: 60px 20px; color: var(--text-muted);
+    }
+    .empty-icon { font-size: 44px; margin-bottom: 10px; }
+    .empty h3 { font-size: 16px; font-weight: 600; color: var(--text); }
+
+    /* ── TOAST ── */
+    .toast {
+      position: fixed; bottom: 24px; left: 50%;
+      transform: translateX(-50%);
+      background: #10b981; color: #fff;
+      padding: 11px 22px; border-radius: 11px;
+      font-size: 13px; font-weight: 600;
+      box-shadow: 0 8px 28px rgba(16,185,129,0.35);
+      z-index: 999; transition: opacity 0.35s, transform 0.35s; white-space: nowrap;
+    }
+    .toast.hide { opacity: 0; transform: translateX(-50%) translateY(14px); }
+
+    /* ── TABLET: wider layout ── */
+    @media (min-width: 700px) {
+      .main { padding: 16px 20px 40px; }
+      .td-id { width: 120px; }
+      .td-qty { width: 80px; }
+      .td-actions { width: 200px; }
+      .customer-addr { max-width: 320px; }
+    }
   </style>
 </head>
 <body>
 
+<%
+  var newOrders      = orders.filter(function(o){ return o.status === 'NEW'; });
+  var acceptedOrders = orders.filter(function(o){ return o.status === 'ACCEPTED'; });
+  var readyOrders    = orders.filter(function(o){ return o.status === 'READY TO DISPATCH'; });
+
+  function fmtDate(dateStr) {
+    var d = new Date(dateStr);
+    return String(d.getDate()).padStart(2,'0') + '.' +
+           String(d.getMonth()+1).padStart(2,'0') + '.' +
+           d.getFullYear();
+  }
+%>
+
 <header class="topbar">
   <div class="topbar-inner">
-    <div class="brand">
-      <span class="brand-dot"></span>
-      Sales Dashboard
+    <div class="brand"><span class="brand-dot"></span>Dashboard</div>
+
+    <div class="status-summary">
+      <% if (newOrders.length > 0) { %>
+      <div class="s-pill s-pill-new">
+        <span class="s-dot s-dot-new"></span>NEW <%= newOrders.length %>
+      </div>
+      <% } %>
+      <% if (acceptedOrders.length > 0) { %>
+      <div class="s-pill s-pill-accepted">
+        <span class="s-dot s-dot-accepted"></span>ACCEPTED <%= acceptedOrders.length %>
+      </div>
+      <% } %>
+      <% if (readyOrders.length > 0) { %>
+      <div class="s-pill s-pill-ready">
+        <span class="s-dot s-dot-ready"></span>READY <%= readyOrders.length %>
+      </div>
+      <% } %>
     </div>
+
     <div class="topbar-right">
       <a href="/transfers" class="nav-link">⇆ Transfers</a>
-      <button class="theme-btn" id="themeBtn" onclick="toggleTheme()" title="Toggle theme"></button>
+      <button class="theme-btn" id="themeBtn" onclick="toggleTheme()"></button>
     </div>
   </div>
 </header>
 
 <main class="main">
-  <div class="page-title">Orders</div>
-  <div class="page-sub">
-    <span class="count-pill"><%= orders.length %></span>
-    active orders
-  </div>
 
   <% if (typeof successMessage !== 'undefined' && successMessage) { %>
     <div class="toast" id="toast"><%= successMessage %></div>
     <script>
-      setTimeout(function() {
+      setTimeout(function(){
         var t = document.getElementById('toast');
-        if (t) { t.classList.add('hide'); setTimeout(function(){ t.remove(); }, 400); }
+        if(t){ t.classList.add('hide'); setTimeout(function(){ t.remove(); }, 350); }
       }, 4000);
     </script>
   <% } %>
@@ -324,67 +272,72 @@
     <div class="empty">
       <div class="empty-icon">📭</div>
       <h3>No active orders</h3>
-      <p>All orders are up to date.</p>
+      <p style="margin-top:5px;font-size:13px;">All orders are up to date.</p>
     </div>
   <% } %>
 
-  <% orders.forEach(function(order) {
-    var d = new Date(order.date);
-    var onlyDate =
-      String(d.getDate()).padStart(2,'0') + '.' +
-      String(d.getMonth()+1).padStart(2,'0') + '.' +
-      d.getFullYear();
-    var badgeClass = order.status === 'ACCEPTED'         ? 'badge-accepted'
-                   : order.status === 'READY TO DISPATCH' ? 'badge-ready'
-                   : 'badge-new';
-    var btnClass   = order.nextStatus === 'DISPATCHED'   ? 'btn-dispatch'
-                   : order.nextStatus === 'READY TO DISPATCH' ? 'btn-ready'
-                   : 'btn-accept';
+  <%
+    var groups = [
+      { list: newOrders,      label: 'New',              stripe: 'stripe-new',      badge: 'badge-new',      btnClass: 'btn-accept'   },
+      { list: acceptedOrders, label: 'Accepted',         stripe: 'stripe-accepted', badge: 'badge-accepted', btnClass: 'btn-ready'    },
+      { list: readyOrders,    label: 'Ready to Dispatch',stripe: 'stripe-ready',    badge: 'badge-ready',    btnClass: 'btn-dispatch' }
+    ];
+    groups.forEach(function(group) {
+      if (group.list.length === 0) return;
   %>
-  <div class="card" data-status="<%= order.status %>">
-    <div class="card-body">
-      <div class="card-top">
-        <div class="order-name"><%= order.name %></div>
-        <span class="badge <%= badgeClass %>"><%= order.status %></span>
-      </div>
-
-      <div class="info-grid">
-        <div>
-          <div class="info-label">Date</div>
-          <div class="info-value"><%= onlyDate %></div>
-        </div>
-        <div>
-          <div class="info-label">Quantity</div>
-          <div class="info-value"><%= order.totalQty %> pcs</div>
-        </div>
-        <div>
-          <div class="info-label">Counterparty</div>
-          <div class="info-value"><%= order.counterparty || '—' %></div>
-        </div>
-        <div>
-          <div class="info-label">Owner</div>
-          <div class="info-value"><%= order.owner || '—' %></div>
-        </div>
-      </div>
-
-      <div class="address-box">
-        <div class="address-label">📍 Shipping Address</div>
-        <div class="address-text"><%= order.shippingAddress || 'No address available' %></div>
-      </div>
+  <div class="group">
+    <div class="group-header">
+      <div class="group-stripe <%= group.stripe %>"></div>
+      <span class="group-title"><%= group.label %></span>
+      <span class="group-badge <%= group.badge %>"><%= group.list.length %></span>
+      <div class="group-line"></div>
     </div>
 
-    <div class="card-footer">
-      <a class="btn btn-view" href="/order/<%= order.id %>">View Packing</a>
-      <% if (order.nextStatus) { %>
-        <a class="btn <%= btnClass %>"
-           href="/confirm-status/<%= order.id %>/<%= encodeURIComponent(order.nextStatus) %>"
-           onclick="this.style.pointerEvents='none';this.textContent='Loading…';this.style.opacity='0.65';">
-          <%= order.statusActionLabel %>
-        </a>
-      <% } %>
-    </div>
+    <table class="order-table">
+      <thead>
+        <tr>
+          <th>Order</th>
+          <th>Customer</th>
+          <th class="th-center">Qty</th>
+          <th class="th-right">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% group.list.forEach(function(order) { %>
+        <tr>
+          <td class="td-id">
+            <div class="order-id"><%= order.name %></div>
+            <div class="order-date"><%= fmtDate(order.date) %></div>
+          </td>
+          <td class="td-customer">
+            <div class="customer-name"><%= order.counterparty || '—' %></div>
+            <% if (order.shippingAddress) { %>
+            <div class="customer-addr">📍 <%= order.shippingAddress.replace(/\n/g,' ') %></div>
+            <% } %>
+          </td>
+          <td class="td-qty">
+            <div class="qty-val"><%= order.totalQty %></div>
+            <div class="qty-unit">pcs</div>
+          </td>
+          <td class="td-actions">
+            <div class="action-btns">
+              <a class="btn btn-pack" href="/order/<%= order.id %>">📦 Pack</a>
+              <% if (order.nextStatus) { %>
+              <a class="btn <%= group.btnClass %>"
+                 href="/confirm-status/<%= order.id %>/<%= encodeURIComponent(order.nextStatus) %>"
+                 onclick="this.style.pointerEvents='none';this.style.opacity='0.55';">
+                <%= order.statusActionLabel %>
+              </a>
+              <% } %>
+            </div>
+          </td>
+        </tr>
+        <% }); %>
+      </tbody>
+    </table>
   </div>
   <% }); %>
+
 </main>
 
 <script>
@@ -401,7 +354,6 @@
   }
   setIcon();
 
-  // Strip success/updated query params so refresh doesn't re-show the toast
   if (window.location.search) {
     history.replaceState(null, '', window.location.pathname);
   }
