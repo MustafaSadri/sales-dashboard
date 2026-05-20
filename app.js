@@ -592,6 +592,12 @@ async function refreshOrders(options = {}) {
         demands: order.demands,
         totalQty: await getOrderTotalQty(order.id),
         shippingAddress: order.shipmentAddress,
+        shippingComment: order.shipmentAddressFull?.comment || order.shipmentAddressFull?.addInfo || null,
+        notes: order.description || null,
+        filesCount: order.files?.meta?.size || 0,
+        attributes: (order.attributes || [])
+          .filter(a => a.value && String(a.value).trim())
+          .map(a => ({ name: a.name || 'Note', value: String(a.value).trim() })),
         date: order.moment
       }))
     );
@@ -875,6 +881,99 @@ app.get("/transfer/:id", async (req, res) => {
   } catch (err) {
     console.log("Transfer packing error:", err.message);
     res.send("Error loading transfer items");
+  }
+});
+
+app.get("/api/order/:id/files", async (req, res) => {
+  if (!TOKEN) return res.status(401).json({ error: "No token" });
+  try {
+    const filesRes = await fetchWithRetry(`/entity/customerorder/${req.params.id}/files`);
+    const files = (filesRes.data.rows || []).map(f => ({
+      filename: f.filename || f.title || "file",
+      size: f.size || 0,
+      // Use download.href for full quality; fall back to meta.href (two-step proxy).
+      // Never use miniature.downloadHref — that is a compressed thumbnail.
+      downloadHref: f.download?.href || f.meta?.href || "",
+      isImage: !!(f.miniature)
+    }));
+    res.json({ files });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch files" });
+  }
+});
+
+app.get("/api/file-proxy", async (req, res) => {
+  if (!TOKEN) return res.status(401).send("Unauthorized");
+  const href = req.query.href || "";
+  const filename = req.query.filename || "file";
+  const inline = req.query.inline === "1";
+  if (!href.startsWith("https://")) return res.status(400).send("Invalid URL");
+  try {
+    const first = await api.get(href, {
+      headers: { Authorization: `Bearer ${TOKEN}`, Accept: "application/octet-stream, */*" },
+      responseType: "arraybuffer",
+      timeout: 30000
+    });
+    const ct = (first.headers["content-type"] || "").split(";")[0].trim();
+
+    if (ct !== "application/json") {
+      // MoySklad returned binary directly — full original quality
+      res.set("Content-Type", ct || "application/octet-stream");
+      res.set("Content-Disposition", `${inline ? "inline" : "attachment"}; filename="${filename}"`);
+      return res.send(Buffer.from(first.data));
+    }
+
+    // MoySklad returned JSON file-entity metadata — find binary URL
+    const json = JSON.parse(Buffer.from(first.data).toString("utf8"));
+
+    // Priority 1: explicit download href (full quality)
+    let binaryUrl = json.download?.href;
+
+    // Priority 2: derive the /download/{id} URL from the file UUID in the meta href.
+    //             MoySklad exposes original-quality files here for order attachments.
+    if (!binaryUrl) {
+      const fileId = href.split("/").pop();
+      if (fileId && fileId.includes("-")) {
+        binaryUrl = `${API_BASE}/download/${fileId}`;
+      }
+    }
+
+    // Priority 3: miniature — works but may be resized for large images
+    const miniatureUrl = json.miniature?.downloadHref;
+
+    async function fetchBinary(url) {
+      return api.get(url, {
+        headers: { Authorization: `Bearer ${TOKEN}`, Accept: "application/octet-stream, */*" },
+        responseType: "stream",
+        timeout: 30000
+      });
+    }
+
+    let fileRes;
+    if (binaryUrl) {
+      try {
+        fileRes = await fetchBinary(binaryUrl);
+      } catch (e) {
+        // /download/{id} might 404 — fall back to miniature
+        if (miniatureUrl) {
+          fileRes = await fetchBinary(miniatureUrl);
+        } else {
+          throw e;
+        }
+      }
+    } else if (miniatureUrl) {
+      fileRes = await fetchBinary(miniatureUrl);
+    } else {
+      return res.status(502).send("No download link found in file metadata");
+    }
+
+    const fileCt = fileRes.headers["content-type"] || "application/octet-stream";
+    res.set("Content-Type", fileCt);
+    res.set("Content-Disposition", `${inline ? "inline" : "attachment"}; filename="${filename}"`);
+    fileRes.data.pipe(res);
+  } catch (err) {
+    console.log("File proxy error:", err.response?.status, err.message);
+    res.status(500).send("Failed to download file");
   }
 });
 
